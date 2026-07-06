@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.69] — 2026-07-06
+
+### Fixed
+- **Wind direction sensor not visible in config flow** — removed `device_class` filter from the wind direction and wind speed entity selectors. Previously only sensors with `device_class: wind_direction` / `wind_speed` were shown, hiding sensors from weather station integrations that don't assign those device classes. Now any `sensor` domain entity can be selected.
+
+---
+
 ## [1.9.63] — 2026-07-01
 
 ### Fixed

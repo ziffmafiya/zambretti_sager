@@ -30,14 +30,12 @@ PRESSURE_SENSOR_SELECTOR = selector.EntitySelector(
 WIND_SENSOR_SELECTOR = selector.EntitySelector(
     selector.EntitySelectorConfig(
         domain="sensor",
-        device_class=["wind_direction", "wind_speed"],
     )
 )
 
 WIND_SPEED_SENSOR_SELECTOR = selector.EntitySelector(
     selector.EntitySelectorConfig(
         domain="sensor",
-        device_class="wind_speed",
     )
 )
 
