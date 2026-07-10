@@ -20,6 +20,20 @@ jobs:
         id: tag
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          # Extract the section for this version from CHANGELOG.md
+          # Section starts with "## [X.Y.Z]" and ends before the next "## ["
+          NOTES=$(awk "/^## \[${TAG}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          # Trim leading/trailing blank lines
+          NOTES=$(echo "$NOTES" | sed '/./,$!d' | sed -e :a -e '/^\s*$/{$d;N;ba}')
+          # Write to file to preserve multiline
+          echo "$NOTES" > release_notes.md
+          echo "Release notes:"
+          cat release_notes.md
+
       - name: Build zip
         run: |
           cd custom_components
@@ -31,5 +45,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body_path: release_notes.md
           files: zambretti_sager.zip
           fail_on_unmatched_files: true
