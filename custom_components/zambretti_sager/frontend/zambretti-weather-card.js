@@ -253,18 +253,27 @@ function getWeatherIconKey(zambrettiState, isNight) {
 
 // ── Themes ────────────────────────────────────────────────────────────────
 const CONDITION_THEME = {
-  sunny:            {bg:"linear-gradient(135deg,#C65A00 0%,#F2820A 35%,#FFAA33 65%,#FFD580 100%)"},
-  night_clear:      {bg:"linear-gradient(135deg,#0a1628 0%,#1a237e 55%,#283593 100%)"},
-  partlycloudy:     {bg:"linear-gradient(135deg,#1565C0 0%,#1976D2 55%,#42A5F5 100%)"},
-  cloudy:           {bg:"linear-gradient(135deg,#37474F 0%,#546E7A 60%,#78909C 100%)"},
-  rainy:            {bg:"linear-gradient(135deg,#1A237E 0%,#283593 55%,#3949AB 100%)"},
-  pouring:          {bg:"linear-gradient(135deg,#0D1B2A 0%,#1A237E 55%,#283593 100%)"},
-  "lightning-rainy":{bg:"linear-gradient(135deg,#1a0533 0%,#311B92 55%,#4527A0 100%)"},
-  snowy:            {bg:"linear-gradient(135deg,#37474F 0%,#546E7A 60%,#B0BEC5 100%)"},
-  windy:            {bg:"linear-gradient(135deg,#455A64 0%,#607D8B 55%,#90A4AE 100%)"},
+  sunny:            {bg:"linear-gradient(135deg,#FF8C00 0%,#FFA500 40%,#FFD700 100%)"},
+  night_clear:      {bg:"linear-gradient(135deg,#070B14 0%,#0F172A 50%,#1E293B 100%)"},
+  partlycloudy:     {bg:"linear-gradient(135deg,#FF8C00 0%,#BBDEFB 50%,#FFFFFF 100%)"},
+  cloudy:           {bg:"linear-gradient(135deg,#606C76 0%,#7E8A95 50%,#A2AEB8 100%)"},
+  rainy:            {bg:"linear-gradient(135deg,#425363 0%,#54677A 50%,#70879C 100%)"},
+  pouring:          {bg:"linear-gradient(135deg,#1C242D 0%,#2B3745 50%,#3F5063 100%)"},
+  "lightning-rainy":{bg:"linear-gradient(135deg,#23153A 0%,#43286B 50%,#6943A3 100%)"},
+  snowy:            {bg:"linear-gradient(135deg,#B8C6D4 0%,#DDE5ED 50%,#F4F7FA 100%)"},
+  windy:            {bg:"linear-gradient(135deg,#5F9EA0 0%,#87B6B8 50%,#B4D3D4 100%)"},
 };
 const DEFAULT_THEME = {bg:"linear-gradient(135deg,#1565C0 0%,#1976D2 100%)"};
 function getTheme(c){ return CONDITION_THEME[c] || DEFAULT_THEME; }
+
+// ── Alpha helper: appends alpha channel to all 6-digit hex colors in a CSS string ──
+function applyAlpha(bgString, alphaPct) {
+  if (alphaPct === undefined || alphaPct >= 100 || typeof alphaPct !== 'number' || isNaN(alphaPct)) return bgString;
+  const a = Math.max(0, Math.min(100, alphaPct));
+  const hex = Math.round((a / 100) * 255).toString(16).padStart(2, "0").toUpperCase();
+  // Replace every 6-digit hex color in the string with hex + alpha
+  return bgString.replace(/#([0-9a-fA-F]{6})(?![0-9a-fA-F])/gi, `#$1${hex}`);
+}
 
 // ── Short label helper ────────────────────────────────────────────────────
 function shortLabel(key, labels) {
@@ -300,6 +309,8 @@ function formatWind(speed, displayUnit, sensorUnit) {
     ms = n / 3.6;
   } else if (src === "mph") {
     ms = n / 2.23694;
+  } else if (src === "kn" || src === "kt" || src === "knots") {
+    ms = n / 1.94384;
   } else {
     ms = n; // already m/s
   }
@@ -309,6 +320,9 @@ function formatWind(speed, displayUnit, sensorUnit) {
   }
   if (dst === "km/h" || dst === "kmh") {
     return `${Math.round(ms * 3.6)} km/h`;
+  }
+  if (dst === "kn" || dst === "kt") {
+    return `${(ms * 1.94384).toFixed(1)} kn`;
   }
   return `${ms.toFixed(1)} m/s`; // default m/s
 }
@@ -644,6 +658,7 @@ class ZambrettiWeatherCard extends HTMLElement {
       wind_unit:    "m/s",
       compact:      false,
       auto_theme:   true,
+      theme_alpha:  100,
       custom_bg:    "linear-gradient(135deg,#1565C0 0%,#1976D2 100%)",
     };
   }
@@ -675,6 +690,7 @@ class ZambrettiWeatherCard extends HTMLElement {
       show_precip:    true,
       show_forecasts: true,
       auto_theme:     true,
+      theme_alpha:    config.theme_alpha ?? 100,
       custom_bg:      "linear-gradient(135deg,#1565C0 0%,#1976D2 100%)",
       ...config,
     };
@@ -1075,7 +1091,8 @@ class ZambrettiWeatherCard extends HTMLElement {
 
     // Theme
     const autoTheme = cfg.auto_theme !== false;
-    const theme = autoTheme ? getTheme(condThemeKey) : {bg: cfg.custom_bg || DEFAULT_THEME.bg};
+    let theme = autoTheme ? getTheme(condThemeKey) : {bg: cfg.custom_bg || DEFAULT_THEME.bg};
+    theme = { bg: autoTheme ? applyAlpha(theme.bg, cfg.theme_alpha) : theme.bg };
 
     const icon   = WEATHER_ICONS[iconKey] || WEATHER_ICONS.partlycloudy;
     const zLabel = L[zState] || zState || "—";
@@ -1169,7 +1186,8 @@ class ZambrettiWeatherCard extends HTMLElement {
 
     // If icon or theme changed — full rebuild (rare: weather condition change)
     const autoTheme = cfg.auto_theme !== false;
-    const theme = autoTheme ? getTheme(condThemeKey) : {bg: cfg.custom_bg || DEFAULT_THEME.bg};
+    let theme = autoTheme ? getTheme(condThemeKey) : {bg: cfg.custom_bg || DEFAULT_THEME.bg};
+    theme = { bg: applyAlpha(theme.bg, cfg.theme_alpha) };
     if (iconKey !== this._lastIconKey || theme.bg !== this._lastThemeBg) {
       this._rendered = false;
       this._render();
@@ -1474,6 +1492,7 @@ class ZambrettiWeatherCardEditor extends HTMLElement {
     const t = getEditorStrings(lang, hLang);
 
     const autoThemeOn  = c.auto_theme !== false;
+    const themeAlpha   = c.theme_alpha ?? 100;
     const showWindOn   = c.show_wind !== false;
     const customBg     = c.custom_bg || "linear-gradient(135deg,#1565C0 0%,#1976D2 100%)";
     const isSolidColor = /^#[0-9a-fA-F]{3,8}$/.test(customBg.trim());
@@ -1543,10 +1562,20 @@ class ZambrettiWeatherCardEditor extends HTMLElement {
           <option value="m/s"  ${windUnit==="m/s" ?"selected":""}>m/s</option>
           <option value="km/h" ${windUnit==="km/h"?"selected":""}>km/h</option>
           <option value="mph"  ${windUnit==="mph" ?"selected":""}>mph</option>
+          <option value="kn"   ${windUnit==="kn"  ?"selected":""}>kn</option>
         </select>
       </div>` : ""}
 
       ${this._toggle("sw-auto-theme", t.autoTheme, t.autoThemeH, autoThemeOn)}
+      ${autoThemeOn ? `
+      <div class="custom-bg-row">
+        <div class="row-label">${t.themeAlpha || "Background opacity (Alpha)"}</div>
+        <div class="row-hint">${t.themeAlphaH || "Adjust the transparency of the auto theme background (0–100%)"}</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+          <input type="range" id="theme-alpha-slider" min="0" max="100" value="${themeAlpha}" style="flex:1; cursor:pointer;">
+          <span id="theme-alpha-lbl" style="font-size:0.85rem; font-family:monospace; width:40px; text-align:right;">${themeAlpha}%</span>
+        </div>
+      </div>` : ""}
       ${!autoThemeOn ? `
       <div class="custom-bg-row">
         <div class="row-label">${t.customBg}</div>
@@ -1584,6 +1613,17 @@ class ZambrettiWeatherCardEditor extends HTMLElement {
         this._fire({...this._config, [el.dataset.key]: el.checked});
       });
     });
+
+    const alphaSlider = this.shadowRoot.querySelector("#theme-alpha-slider");
+    const alphaLbl    = this.shadowRoot.querySelector("#theme-alpha-lbl");
+    if (alphaSlider) {
+      alphaSlider.addEventListener("input", e => {
+        if (alphaLbl) alphaLbl.textContent = `${e.target.value}%`;
+      });
+      alphaSlider.addEventListener("change", e => {
+        this._fire({...this._config, theme_alpha: parseInt(e.target.value, 10)});
+      });
+    }
 
     const bgText    = this.shadowRoot.querySelector("#bg-text");
     const bgPicker  = this.shadowRoot.querySelector("#bg-color-picker");
