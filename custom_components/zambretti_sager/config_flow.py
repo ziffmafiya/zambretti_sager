@@ -1,3 +1,5 @@
+"""Config flow for the Zambretti & Sager integration."""
+
 from __future__ import annotations
 
 import voluptuous as vol
@@ -74,9 +76,12 @@ def _apply_location(data: dict) -> dict:
 
 
 class ZambrettiSagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Config flow for setting up a new Zambretti & Sager entry."""
+
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        """Handle the initial step shown to the user."""
         if user_input is not None:
             user_input = _normalize_optional_entities(_apply_location(user_input))
 
@@ -110,15 +115,20 @@ class ZambrettiSagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
+        """Return the options flow handler for this entry."""
         return ZambrettiSagerOptionsFlowHandler(config_entry)
 
 
 class ZambrettiSagerOptionsFlowHandler(config_entries.OptionsFlow):
+    """Options flow for updating an existing Zambretti & Sager entry."""
+
     def __init__(self, config_entry) -> None:
+        """Store the config entry being reconfigured."""
         super().__init__()
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
+        """Handle the options form, pre-populated with current settings."""
         if user_input is not None:
             user_input = _normalize_optional_entities(_apply_location(user_input))
             return self.async_create_entry(title="", data=user_input)

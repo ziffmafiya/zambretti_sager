@@ -1,4 +1,4 @@
-"""Координатор данных для интеграции Zambretti & Sager."""
+"""Data coordinator for the Zambretti & Sager integration."""
 
 from __future__ import annotations
 
@@ -131,6 +131,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         )
 
     def _stop_pressure_watcher(self) -> None:
+        """Unsubscribe from pressure sensor state change events."""
         if self._unsub_state_listener:
             self._unsub_state_listener()
             self._unsub_state_listener = None

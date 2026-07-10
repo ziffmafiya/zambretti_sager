@@ -1,3 +1,5 @@
+"""Constants for the Zambretti & Sager integration."""
+
 from typing import Final
 
 DOMAIN = "zambretti_sager"

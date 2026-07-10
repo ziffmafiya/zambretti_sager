@@ -1,6 +1,10 @@
 /**
  * Zambretti & Sager Weather Card  v1.9.72
  * Lovelace custom card for Home Assistant
+ *
+ * Displays Zambretti & Sager pressure-based weather forecasts as an iOS-style
+ * card with animated weather icons, precipitation gauge, forecast timeline,
+ * and 24h pressure/precipitation history chart.
  */
 
 import {
@@ -11,6 +15,7 @@ import {
 } from "./zambretti-card-i18n.js";
 
 // ── Condition map ─────────────────────────────────────────────────────────
+/** Maps Zambretti state keys to generic weather condition strings used for icon routing and theming. */
 const ZAMBRETTI_CONDITION = {
   settled_fine:"sunny", fine_weather:"sunny",
   fine_becoming_less_settled:"partlycloudy", fairly_fine_showery_later:"partlycloudy",
@@ -31,6 +36,7 @@ const ZAMBRETTI_CONDITION = {
 // ── SVG weather icons ─────────────────────────────────────────────────────
 // FIX: sun — all rays + disc wrapped in ONE <g> with ONE animateTransform
 // so disc and rays rotate together without jitter.
+/** Inline animated SVG icons keyed by weather condition string. */
 const WEATHER_ICONS = {
 
   sunny:`<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -227,6 +233,7 @@ const WEATHER_ICONS = {
 };
 
 // ── Icon key routing ──────────────────────────────────────────────────────
+/** Maps Zambretti state keys to icon keys, same as ZAMBRETTI_CONDITION but kept separate for clarity. */
 const ZAMBRETTI_TO_ICON = {
   settled_fine:"sunny", fine_weather:"sunny",
   fine_becoming_less_settled:"partlycloudy", fairly_fine_showery_later:"partlycloudy",
@@ -244,6 +251,13 @@ const ZAMBRETTI_TO_ICON = {
   stable:"partlycloudy",
 };
 
+/**
+ * Returns the icon key for a given Zambretti state, switching to night_clear
+ * when it's nighttime and the state is settled_fine / fine_weather.
+ * @param {string} zambrettiState
+ * @param {boolean} isNight
+ * @returns {string}
+ */
 function getWeatherIconKey(zambrettiState, isNight) {
   if (zambrettiState === "settled_fine" || zambrettiState === "fine_weather") {
     return isNight ? "night_clear" : "sunny";
@@ -252,6 +266,7 @@ function getWeatherIconKey(zambrettiState, isNight) {
 }
 
 // ── Themes ────────────────────────────────────────────────────────────────
+/** Background gradient definitions keyed by weather condition. */
 const CONDITION_THEME = {
   sunny:            {bg:"linear-gradient(135deg,#FF8C00 0%,#FFA500 40%,#FFD700 100%)"},
   night_clear:      {bg:"linear-gradient(135deg,#070B14 0%,#0F172A 50%,#1E293B 100%)"},
@@ -263,10 +278,19 @@ const CONDITION_THEME = {
   snowy:            {bg:"linear-gradient(135deg,#B8C6D4 0%,#DDE5ED 50%,#F4F7FA 100%)"},
   windy:            {bg:"linear-gradient(135deg,#5F9EA0 0%,#87B6B8 50%,#B4D3D4 100%)"},
 };
+/** Fallback theme used when no condition-specific theme matches. */
 const DEFAULT_THEME = {bg:"linear-gradient(135deg,#1565C0 0%,#1976D2 100%)"};
+/** Returns the theme object for a given condition key, falling back to DEFAULT_THEME. */
 function getTheme(c){ return CONDITION_THEME[c] || DEFAULT_THEME; }
 
 // ── Alpha helper: appends alpha channel to all 6-digit hex colors in a CSS string ──
+/**
+ * Appends an alpha (opacity) suffix to every 6-digit hex color in a CSS gradient string.
+ * No-op when alphaPct is 100 or invalid.
+ * @param {string} bgString  CSS background value (e.g. linear-gradient with hex stops)
+ * @param {number} alphaPct  Opacity percentage 0–100
+ * @returns {string}
+ */
 function applyAlpha(bgString, alphaPct) {
   if (alphaPct === undefined || alphaPct >= 100 || typeof alphaPct !== 'number' || isNaN(alphaPct)) return bgString;
   const a = Math.max(0, Math.min(100, alphaPct));
@@ -276,15 +300,27 @@ function applyAlpha(bgString, alphaPct) {
 }
 
 // ── Short label helper ────────────────────────────────────────────────────
+/**
+ * Returns a short (max 2-word) version of a forecast label for compact display.
+ * @param {string} key   i18n key
+ * @param {object} labels  label map
+ * @returns {string}
+ */
 function shortLabel(key, labels) {
   const full = labels[key] || key || "—";
   return full.split(/[,\s]+/).filter(Boolean).slice(0, 2).join(" ");
 }
 
 // ── Unique ID counter for SVG gradients ──────────────────────────────────
+/** Monotonic counter used to generate unique SVG gradient/clipPath IDs per render. */
 let _gradientIdCounter = 0;
 
 // ── Wind direction degrees → compass string ───────────────────────────────
+/**
+ * Converts a wind direction in degrees to an 8-point compass string (N, NE, E, …).
+ * @param {number|null} deg
+ * @returns {string}
+ */
 function degToCompass(deg) {
   if (deg === null || deg === undefined) return "";
   const dirs = ["N","NE","E","SE","S","SW","W","NW"];
@@ -294,6 +330,14 @@ function degToCompass(deg) {
 // ── Format wind speed with correct unit ──────────────────────────────────
 // sensorUnit: the native unit reported by the HA sensor (e.g. "km/h", "m/s", "mph")
 // displayUnit: the unit the user wants to see on the card
+/**
+ * Converts a raw wind speed value from the sensor's native unit to the user's
+ * chosen display unit and returns a formatted string (e.g. "SW 12 km/h").
+ * @param {number|string|null} speed  Raw sensor value
+ * @param {string} displayUnit  Target unit: "m/s" | "km/h" | "mph" | "kn"
+ * @param {string} sensorUnit   Native sensor unit
+ * @returns {string|null}
+ */
 function formatWind(speed, displayUnit, sensorUnit) {
   if (speed === null || speed === undefined) return null;
   const n = parseFloat(speed);
@@ -328,6 +372,11 @@ function formatWind(speed, displayUnit, sensorUnit) {
 }
 
 // ── Precipitation gauge SVG ───────────────────────────────────────────────
+/**
+ * Renders a circular arc gauge SVG showing precipitation probability.
+ * @param {number} pct  Value 0–100
+ * @returns {string}  SVG markup string
+ */
 function precipWidget(pct) {
   const r=44, cx=60, cy=60, circ=2*Math.PI*r;
   const trackLen=circ*0.75, trackGap=circ-trackLen;
@@ -630,6 +679,11 @@ function historyChart(points, labels, compact) {
 }
 
 // ── Main card class ───────────────────────────────────────────────────────
+/**
+ * Main Lovelace card element.
+ * Renders the weather card, handles hass state updates via full rebuild (_render)
+ * or lightweight patch (_patch), and fetches 24h history for the chart/timeline.
+ */
 class ZambrettiWeatherCard extends HTMLElement {
   constructor() {
     super();
@@ -640,8 +694,10 @@ class ZambrettiWeatherCard extends HTMLElement {
     this._historyTimer = null;
   }
 
+  /** Returns the editor element used by the Lovelace card picker. */
   static getConfigElement() { return document.createElement("zambretti-weather-card-editor"); }
 
+  /** Returns a minimal default config for the card picker preview. */
   static getStubConfig() {
     return {
       entity_zambretti: "sensor.zambretti_forecast",
@@ -663,6 +719,7 @@ class ZambrettiWeatherCard extends HTMLElement {
     };
   }
 
+  /** Applies a new card config, resets render state and clears history cache if needed. */
   setConfig(config) {
     this._rendered = false;
     this._entitiesResolved = false;
@@ -701,6 +758,12 @@ class ZambrettiWeatherCard extends HTMLElement {
   // e.g. sensor.weather_station_zambretti_forecast
   // We find them by matching unique_id suffixes stored in entity registry,
   // or fall back to scanning hass.states for known name patterns.
+  /**
+   * Scans hass.states for sensor entities whose IDs end with known suffixes
+   * and returns a map of config key → resolved entity_id.
+   * @param {object} h  hass object
+   * @returns {object}
+   */
   _resolveEntities(h) {
     const SUFFIX_MAP = {
       entity_zambretti: ["_zambretti_forecast", "zambretti_forecast"],
@@ -751,6 +814,10 @@ class ZambrettiWeatherCard extends HTMLElement {
   }
 
   // ── History fetch ─────────────────────────────────────────────────────
+  /**
+   * Triggers a history fetch if one isn't already running and the throttle
+   * interval (5 min) has elapsed. Updates chart and timeline on completion.
+   */
   _scheduleHistoryFetch() {
     if (this._historyFetching) return;
     // Throttle: refetch at most once per 5 minutes
@@ -770,6 +837,10 @@ class ZambrettiWeatherCard extends HTMLElement {
     });
   }
 
+  /**
+   * Fetches 24–48h of Zambretti state, pressure and precipitation history
+   * via the HA WebSocket history API. Populates _historyPoints and _timelineSteps.
+   */
   async _doFetchHistory() {
     if (!this._hass) return;
     const cfg = this._config;
@@ -998,6 +1069,7 @@ class ZambrettiWeatherCard extends HTMLElement {
   }
 
   // ── Patch only the chart area without full rebuild ─────────────────────
+  /** Re-renders only the history chart section without destroying the rest of the DOM. */
   _patchChart() {
     const chartWrap = this.shadowRoot?.querySelector(".history-chart-wrap");
     if (!chartWrap) {
@@ -1013,6 +1085,7 @@ class ZambrettiWeatherCard extends HTMLElement {
   }
 
   // ── Patch only the timeline strip without full rebuild ──────────────────
+  /** Re-renders only the forecast trend timeline strip without a full card rebuild. */
   _patchTimeline() {
     const wrap = this.shadowRoot?.querySelector(".trend-timeline-wrap");
     if (!wrap) {
@@ -1024,6 +1097,7 @@ class ZambrettiWeatherCard extends HTMLElement {
     wrap.innerHTML = forecastTimeline(this._timelineSteps, L, !!this._config.compact);
   }
 
+  /** Subscribes to the background-preview custom event dispatched by the editor. */
   connectedCallback() {
     this._bgHandler = e => {
       if (this._config && this._config.auto_theme === false) {
@@ -1035,21 +1109,27 @@ class ZambrettiWeatherCard extends HTMLElement {
     window.addEventListener("zambretti-bg-preview", this._bgHandler);
   }
 
+  /** Cleans up the background-preview event listener. */
   disconnectedCallback() {
     window.removeEventListener("zambretti-bg-preview", this._bgHandler);
   }
 
+  /** Returns the current state string of a HA entity, or null if unavailable. */
   _state(id)              { return this._hass?.states?.[id]?.state ?? null; }
+  /** Returns a specific attribute of a HA entity, or the fallback value. */
   _attr(id, key, fallback){ return this._hass?.states?.[id]?.attributes?.[key] ?? fallback; }
 
+  /** Returns the resolved i18n label map for the configured language. */
   _labels() {
     return getLabels(this._config.language || "auto", this._hass?.language || "en");
   }
 
+  /** Returns the localized label for the precipitation indicator. */
   _precipLabel() {
     return getPrecipLabel(this._config.language || "auto", this._hass?.language || "en");
   }
 
+  /** Performs a full shadow DOM rebuild of the card. Called on first render or after a condition/theme change. */
   _render() {
     if (!this._hass) return;
     const cfg = this._config;
@@ -1165,6 +1245,10 @@ class ZambrettiWeatherCard extends HTMLElement {
   }
 
   // ── Lightweight patch: update only text/values without touching SVG ──────
+  /**
+   * Updates only dynamic text nodes and the precip gauge without rebuilding the SVG.
+   * Falls back to a full _render() if the icon or theme background has changed.
+   */
   _patch() {
     if (!this._hass || !this._rendered) return;
     const cfg = this._config;
@@ -1259,6 +1343,13 @@ class ZambrettiWeatherCard extends HTMLElement {
 
   }
 
+  /**
+   * Returns the Shadow DOM CSS string. Scales font/icon sizes for compact mode.
+   * @param {object} theme  Current theme object with .bg
+   * @param {boolean} compact
+   * @param {boolean} showPrecip
+   * @returns {string}
+   */
   _css(theme, compact, showPrecip = true) {
     const s        = compact ? 0.82 : 1;
     const iconSz   = Math.round(72 * s);

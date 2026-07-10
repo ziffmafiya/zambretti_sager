@@ -1,3 +1,5 @@
+"""Sensor platform for the Zambretti & Sager integration."""
+
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -51,6 +53,7 @@ class WeatherSensorBase(CoordinatorEntity, SensorEntity):
     _attr_force_update = True
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the sensor and set shared device info."""
         super().__init__(coordinator)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.entry.entry_id)},
@@ -63,10 +66,12 @@ class WeatherSensorBase(CoordinatorEntity, SensorEntity):
 
     @property
     def data(self) -> ForecastData | None:
+        """Return the latest forecast data snapshot from the coordinator."""
         return self.coordinator.data
 
     @property
     def available(self) -> bool:
+        """Return True when the coordinator has valid data."""
         d = self.data
         return d is not None and d.available
 
@@ -102,15 +107,17 @@ class WeatherSensorBase(CoordinatorEntity, SensorEntity):
             attrs["is_night"] = d.is_night
         return attrs
 class ZambrettiSensor(WeatherSensorBase):
-    """Текущий прогноз Замбретти на основе тренда за 3 часа."""
+    """Current Zambretti forecast sensor based on the 3-hour pressure trend."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the Zambretti forecast sensor."""
         super().__init__(coordinator)
         self._attr_name = "Zambretti Forecast"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti"
 
     @property
     def native_value(self) -> str | None:
+        """Return the current Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
@@ -121,6 +128,7 @@ class ZambrettiSensor(WeatherSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including the source pressure sensor id."""
         d = self.data
         if not d or d.p_now is None:
             return {}
@@ -134,15 +142,17 @@ class ZambrettiSensor(WeatherSensorBase):
 
 
 class SagerSensor(WeatherSensorBase):
-    """Прогноз Сейгера на основе давления, тренда и направления ветра."""
+    """Sager forecast sensor based on pressure, trend, and wind direction."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the Sager forecast sensor."""
         super().__init__(coordinator)
         self._attr_name = "Sager Forecast"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_sager"
 
     @property
     def native_value(self) -> str | None:
+        """Return the current Sager forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
@@ -152,6 +162,7 @@ class SagerSensor(WeatherSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes for the Sager forecast."""
         d = self.data
         if not d or d.p_now is None:
             return {}
@@ -161,9 +172,10 @@ class SagerSensor(WeatherSensorBase):
 
 
 class ZambrettiForecast6h(WeatherSensorBase):
-    """Прогноз на 6 ч: тренд за 3 ч × 2."""
+    """Zambretti forecast sensor for 6 hours ahead (3-hour trend extrapolated × 2)."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the 6-hour Zambretti forecast sensor."""
         super().__init__(coordinator)
         self._attr_name = "Zambretti Forecast 6h"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti_6h"
@@ -171,6 +183,7 @@ class ZambrettiForecast6h(WeatherSensorBase):
 
     @property
     def native_value(self) -> str | None:
+        """Return the 6-hour Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
@@ -181,6 +194,7 @@ class ZambrettiForecast6h(WeatherSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including predicted pressure for 6 hours ahead."""
         d = self.data
         if not d or d.p_now is None:
             return {}
@@ -192,9 +206,10 @@ class ZambrettiForecast6h(WeatherSensorBase):
 
 
 class ZambrettiForecast12h(WeatherSensorBase):
-    """Прогноз на 12 ч: тренд за 6 ч × 2."""
+    """Zambretti forecast sensor for 12 hours ahead (6-hour trend extrapolated × 2)."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the 12-hour Zambretti forecast sensor."""
         super().__init__(coordinator)
         self._attr_name = "Zambretti Forecast 12h"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti_12h"
@@ -202,6 +217,7 @@ class ZambrettiForecast12h(WeatherSensorBase):
 
     @property
     def native_value(self) -> str | None:
+        """Return the 12-hour Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
@@ -214,6 +230,7 @@ class ZambrettiForecast12h(WeatherSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including predicted pressure for 12 hours ahead."""
         d = self.data
         if not d or d.p_now is None:
             return {}
@@ -226,9 +243,10 @@ class ZambrettiForecast12h(WeatherSensorBase):
 
 
 class ZambrettiForecast24h(WeatherSensorBase):
-    """Прогноз на 24 ч: тренд за 12 ч × 2."""
+    """Zambretti forecast sensor for 24 hours ahead (12-hour trend extrapolated × 2)."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the 24-hour Zambretti forecast sensor."""
         super().__init__(coordinator)
         self._attr_name = "Zambretti Forecast 24h"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti_24h"
@@ -236,6 +254,7 @@ class ZambrettiForecast24h(WeatherSensorBase):
 
     @property
     def native_value(self) -> str | None:
+        """Return the 24-hour Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
@@ -252,6 +271,7 @@ class ZambrettiForecast24h(WeatherSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including predicted pressure for 24 hours ahead."""
         d = self.data
         if not d or d.p_now is None:
             return {}
@@ -268,9 +288,10 @@ class ZambrettiForecast24h(WeatherSensorBase):
 
 
 class PrecipitationProbability(WeatherSensorBase):
-    """Вероятность осадков на основе давления, тренда и влажности."""
+    """Sensor for precipitation probability based on pressure, trend, and humidity."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the precipitation probability sensor."""
         super().__init__(coordinator)
         self._attr_name = "Precipitation Probability"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_precipitation_probability"
@@ -280,6 +301,7 @@ class PrecipitationProbability(WeatherSensorBase):
 
     @property
     def native_value(self) -> int | None:
+        """Return precipitation probability as an integer percentage (0–100)."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
@@ -314,6 +336,7 @@ class PrecipitationProbability(WeatherSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes for the precipitation probability sensor."""
         d = self.data
         if not d or d.p_now is None:
             return {}
