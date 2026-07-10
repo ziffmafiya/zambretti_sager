@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.9.71] — 2026-07-10
+
+### Added
+- **Theme background opacity (Alpha)** — new `theme_alpha` config option (0–100, default 100). When auto theme is enabled, a slider appears in the card editor to adjust the transparency of the background gradient without changing the color palette.
+
+### Changed
+- **Refreshed auto theme color palettes** — updated gradients for all weather conditions (sunny, night_clear, partlycloudy, cloudy, rainy, pouring, lightning-rainy, snowy, windy) to a new set of more neutral tones.
+
+---
+
 ## [1.9.70] — 2026-07-07
 
 ### Changed
