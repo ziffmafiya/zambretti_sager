@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.72] — 2026-07-10
+
+### Added
+- **Knots (kn) wind unit** — added `kn` as a selectable wind speed unit in the card editor. The conversion logic was already present internally, just not exposed in the UI.
+
+---
+
 ## [1.9.71] — 2026-07-10
 
 ### Added

@@ -1,5 +1,5 @@
 /**
- * Zambretti & Sager Weather Card  v1.9.71
+ * Zambretti & Sager Weather Card  v1.9.72
  * Lovelace custom card for Home Assistant
  */
 
@@ -1562,6 +1562,7 @@ class ZambrettiWeatherCardEditor extends HTMLElement {
           <option value="m/s"  ${windUnit==="m/s" ?"selected":""}>m/s</option>
           <option value="km/h" ${windUnit==="km/h"?"selected":""}>km/h</option>
           <option value="mph"  ${windUnit==="mph" ?"selected":""}>mph</option>
+          <option value="kn"   ${windUnit==="kn"  ?"selected":""}>kn</option>
           <option value="kn"   ${windUnit==="kn"  ?"selected":""}>kn</option>
         </select>
       </div>` : ""}
