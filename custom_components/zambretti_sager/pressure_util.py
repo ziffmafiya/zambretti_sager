@@ -1,4 +1,4 @@
-"""Утилиты для чтения и коррекции давления."""
+"""Pressure utilities: parsing, sea-level correction, elevation lookup."""
 
 from __future__ import annotations
 
@@ -23,7 +23,16 @@ _HPA_UNITS = frozenset({
 
 
 async def get_elevation(hass, latitude, longitude):
-    """Получить высоту над уровнем моря через Open-Elevation API."""
+    """Get elevation above sea level via Open-Elevation API.
+
+    Args:
+        hass: Home Assistant instance.
+        latitude: Latitude in degrees.
+        longitude: Longitude in degrees.
+
+    Returns:
+        Elevation in meters, or None if lookup fails.
+    """
     url = f"https://api.open-elevation.com/api/v1/lookup?locations={latitude},{longitude}"
     session = async_get_clientsession(hass)
     try:
@@ -37,22 +46,47 @@ async def get_elevation(hass, latitude, longitude):
 
 
 def calculate_sea_level_pressure(pressure, temperature, altitude):
-    """Рассчитать давление на уровне моря."""
+    """Calculate sea-level pressure from absolute pressure using the barometric formula.
+
+    Args:
+        pressure: Absolute station pressure in hPa.
+        temperature: Current temperature in °C.
+        altitude: Station altitude in meters.
+
+    Returns:
+        Sea-level pressure in hPa.
+
+    Uses the standard atmosphere approximation:
+        P_sea = P_abs / (1 - (0.0065 * h) / (T + 0.0065 * h + 273.15))^5.257
+
+    Falls back to a simple lapse rate correction if the formula yields
+    an invalid factor (e.g., at very high altitudes).
+    """
     if altitude is None or altitude == 0:
         return pressure
 
     factor = 1 - (0.0065 * altitude) / (temperature + 0.0065 * altitude + 273.15)
 
     if factor <= 0:
+        # Fallback: approximate 1 hPa per 8.3 m
         return pressure + (altitude / 8.3)
 
     return pressure / (factor ** 5.257)
 
 
 def _normalize_pressure_value(value: float, unit: str | None, entity_id: str) -> float:
-    """Нормализовать числовое значение давления в hPa."""
+    """Normalize a numeric pressure value to hPa.
+
+    Args:
+        value: Raw numeric value from the sensor.
+        unit: Unit of measurement string from state attributes.
+        entity_id: Entity ID for logging.
+
+    Returns:
+        Pressure in hPa.
+    """
     if unit in _HPA_UNITS or unit is None:
-        # Если единица не указана, но значение > 2000 — скорее всего Па
+        # If unit not specified but value > 2000, assume Pascals
         if unit is None and value > 2000:
             return value / 100
         return value
@@ -72,7 +106,17 @@ def _normalize_pressure_value(value: float, unit: str | None, entity_id: str) ->
 
 
 def parse_pressure_hpa(state: State) -> float:
-    """Прочитать давление из состояния сенсора и нормализовать в hPa."""
+    """Read pressure from a sensor state and normalize to hPa.
+
+    Args:
+        state: HA State object from the pressure sensor.
+
+    Returns:
+        Pressure in hPa.
+
+    Raises:
+        ValueError: If state is invalid or cannot be parsed.
+    """
     if state.state.lower() in _INVALID_STATES:
         raise ValueError(f"Sensor {state.entity_id} has invalid state: {state.state!r}")
     value = float(state.state)
@@ -81,13 +125,27 @@ def parse_pressure_hpa(state: State) -> float:
 
 
 def parse_pressure_hpa_from_history(history_state) -> float:
-    """Прочитать давление из записи recorder (State или dict или LazyState)."""
+    """Read pressure from a recorder history entry and normalize to hPa.
 
-    # Объект State из homeassistant.core
+    Handles three formats returned by HA history API:
+    - Full State object (homeassistant.core.State)
+    - Compact dict format (newer HA versions): {'state', 'lu', 'uom', ...}
+    - LazyState or other objects with attributes
+
+    Args:
+        history_state: History entry from recorder.
+
+    Returns:
+        Pressure in hPa.
+
+    Raises:
+        ValueError: If state is invalid or cannot be parsed.
+    """
+    # Full State object from homeassistant.core
     if isinstance(history_state, State):
         return parse_pressure_hpa(history_state)
 
-    # dict — компактный формат recorder в новых версиях HA
+    # Compact dict format (minimal_response=true in newer HA)
     if isinstance(history_state, dict):
         state_value = history_state.get("state") or history_state.get("s")
         if state_value is None or str(state_value).lower() in _INVALID_STATES:
@@ -96,7 +154,7 @@ def parse_pressure_hpa_from_history(history_state) -> float:
         entity_id = history_state.get("entity_id", "history")
         return _normalize_pressure_value(float(state_value), unit, entity_id)
 
-    # LazyState или любой другой объект с атрибутами
+    # LazyState or any object with attributes
     state_value = getattr(history_state, "state", None)
     if state_value is None or str(state_value).lower() in _INVALID_STATES:
         raise ValueError(f"Invalid history pressure state: {state_value!r}")

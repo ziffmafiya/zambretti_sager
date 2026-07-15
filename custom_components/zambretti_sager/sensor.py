@@ -19,7 +19,7 @@ from .coordinator import ForecastData, ZambrettiSagerCoordinator
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Настройка сенсоров."""
+    """Set up the Zambretti & Sager sensors."""
     coordinator: ZambrettiSagerCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities([
@@ -33,7 +33,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 def _trend_label(delta: float) -> str:
-    """Текстовый тренд для атрибутов."""
+    """Return human-readable trend label for attributes."""
     trend = classify_pressure_trend(delta)
     return {
         "rising_rapidly": "↑↑ Rising Fast",
@@ -45,7 +45,7 @@ def _trend_label(delta: float) -> str:
 
 
 class WeatherSensorBase(CoordinatorEntity, SensorEntity):
-    """Базовый класс сенсоров прогноза."""
+    """Base class for all forecast sensors."""
 
     # Force HA to write a recorder entry every coordinator update cycle
     # (every 5 min) even when state hasn't changed. This gives the Lovelace
@@ -77,17 +77,21 @@ class WeatherSensorBase(CoordinatorEntity, SensorEntity):
 
     @staticmethod
     def _zambretti_index(p_now: float, delta: float) -> int:
-        """Вычислить индекс Замбретти (1–32)."""
-        if delta <= -1.6:
+        """Calculate Zambretti index (1–32) from pressure and 3h trend.
+
+        The original Zambretti algorithm uses different formulas for
+        falling, steady, and rising pressure trends.
+        """
+        if delta <= -1.6:        # Falling
             z = round(127 - 0.12 * p_now)
-        elif delta >= 1.6:
+        elif delta >= 1.6:       # Rising
             z = round(185 - 0.16 * p_now)
-        else:
+        else:                    # Steady
             z = round(144 - 0.13 * p_now)
         return max(1, min(z, 32))
 
     def _base_attrs(self, delta: float) -> dict:
-        """Общие атрибуты для всех сенсоров прогноза."""
+        """Common attributes for all forecast sensors."""
         d = self.data
         attrs: dict = {}
         if d and d.p_now is not None:
@@ -106,6 +110,8 @@ class WeatherSensorBase(CoordinatorEntity, SensorEntity):
         if d and d.is_night:
             attrs["is_night"] = d.is_night
         return attrs
+
+
 class ZambrettiSensor(WeatherSensorBase):
     """Current Zambretti forecast sensor based on the 3-hour pressure trend."""
 
@@ -172,7 +178,7 @@ class SagerSensor(WeatherSensorBase):
 
 
 class ZambrettiForecast6h(WeatherSensorBase):
-    """Zambretti forecast sensor for 6 hours ahead (3-hour trend extrapolated × 2)."""
+    """Zambretti forecast sensor for 6 hours ahead (3-hour trend extrapolated ×2)."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
         """Initialize the 6-hour Zambretti forecast sensor."""
@@ -206,7 +212,7 @@ class ZambrettiForecast6h(WeatherSensorBase):
 
 
 class ZambrettiForecast12h(WeatherSensorBase):
-    """Zambretti forecast sensor for 12 hours ahead (6-hour trend extrapolated × 2)."""
+    """Zambretti forecast sensor for 12 hours ahead (6-hour trend extrapolated ×2)."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
         """Initialize the 12-hour Zambretti forecast sensor."""
@@ -243,7 +249,7 @@ class ZambrettiForecast12h(WeatherSensorBase):
 
 
 class ZambrettiForecast24h(WeatherSensorBase):
-    """Zambretti forecast sensor for 24 hours ahead (12-hour trend extrapolated × 2)."""
+    """Zambretti forecast sensor for 24 hours ahead (12-hour trend extrapolated ×2)."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
         """Initialize the 24-hour Zambretti forecast sensor."""
@@ -310,6 +316,7 @@ class PrecipitationProbability(WeatherSensorBase):
         delta = d.p_now - p_3h
         p_now = d.p_now
 
+        # Base probability from current pressure
         if p_now < 1000:       base_prob = 90
         elif p_now < 1005:     base_prob = 70
         elif p_now < 1010:     base_prob = 50
@@ -317,13 +324,14 @@ class PrecipitationProbability(WeatherSensorBase):
         elif p_now < 1020:     base_prob = 15
         else:                  base_prob = 5
 
+        # Trend modifier
         if delta < -3.0:       trend_modifier = 30
         elif delta < -1.6:     trend_modifier = 15
         elif delta > 3.0:      trend_modifier = -30
         elif delta > 1.6:      trend_modifier = -15
         else:                  trend_modifier = 0
 
-        # Влажность: высокая влажность увеличивает вероятность осадков
+        # Humidity modifier: high humidity increases precipitation chance
         humidity_modifier = 0
         if d.humidity is not None:
             if d.humidity >= 90:    humidity_modifier = 15

@@ -4,9 +4,9 @@ from typing import Final
 
 DOMAIN = "zambretti_sager"
 
-VERSION = "1.9.69"
+VERSION = "1.9.71"
 
-# Frontend
+# Frontend (Lovelace card)
 URL_BASE: Final[str] = "/zambretti_sager_card"
 
 JSMODULES: Final[list[dict[str, str]]] = [
@@ -17,6 +17,7 @@ JSMODULES: Final[list[dict[str, str]]] = [
     },
 ]
 
+# Config entry keys
 CONF_PRESSURE_SENSOR = "pressure_sensor"
 CONF_WIND_SENSOR = "wind_sensor"
 CONF_WIND_SPEED_SENSOR = "wind_speed_sensor"
@@ -26,8 +27,11 @@ CONF_LATITUDE = "latitude"
 CONF_LONGITUDE = "longitude"
 CONF_USE_SEA_LEVEL = "use_sea_level_correction"
 
+# Zambretti algorithm mapping: pressure trend index (1–32) → translation key
+# The original Zambretti algorithm has 32 forecast states grouped by
+# pressure trend: Falling (1-9), Steady (10-19), Rising (20-32)
 ZAMBRETTI_MAPPING = {
-    # Falling
+    # Falling pressure (worsening weather)
     1: "settled_fine",
     2: "fine_weather",
     3: "fine_becoming_less_settled",
@@ -37,7 +41,7 @@ ZAMBRETTI_MAPPING = {
     7: "rain_at_times_worse_later",
     8: "rain_at_times_becoming_very_unsettled",
     9: "very_unsettled_rain",
-    # Steady
+    # Steady pressure
     10: "settled_fine",
     11: "fine_weather",
     12: "fine_possibly_showers",
@@ -48,7 +52,7 @@ ZAMBRETTI_MAPPING = {
     17: "rain_at_frequent_intervals",
     18: "very_unsettled_rain",
     19: "stormy_much_rain",
-    # Rising
+    # Rising pressure (improving weather)
     20: "settled_fine",
     21: "fine_weather",
     22: "becoming_fine",
@@ -64,12 +68,15 @@ ZAMBRETTI_MAPPING = {
     32: "stormy_much_rain",
 }
 
-# Пороги тренда давления по алгоритму Sager (hPa за ~3 ч)
+# Sager algorithm pressure trend thresholds (hPa over ~3 hours)
 SAGER_TREND_RAPID = 1.4
 SAGER_TREND_SLOW = 0.7
 
+# 8-point wind compass directions
 WIND_COMPASS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
+# Keywords in entity_id or attributes that suggest the sensor already reports
+# sea-level pressure (MSLP/QNH), so we shouldn't apply altitude correction again
 SEA_LEVEL_SENSOR_HINTS = (
     "sea_level",
     "sealevel",
@@ -81,7 +88,15 @@ SEA_LEVEL_SENSOR_HINTS = (
 
 
 def classify_pressure_trend(delta_hpa: float) -> str:
-    """Классифицировать тренд давления для алгоритма Sager."""
+    """Classify pressure trend for the Sager algorithm.
+
+    Args:
+        delta_hpa: Pressure change in hPa over the measurement period.
+
+    Returns:
+        One of: "rising_rapidly", "rising_slowly", "steady",
+                "falling_slowly", "falling_rapidly".
+    """
     if delta_hpa >= SAGER_TREND_RAPID:
         return "rising_rapidly"
     if delta_hpa >= SAGER_TREND_SLOW:
@@ -94,7 +109,7 @@ def classify_pressure_trend(delta_hpa: float) -> str:
 
 
 def wind_degrees_to_compass(degrees: float | None) -> str | None:
-    """Преобразовать направление ветра в румб (N, NE, ...)."""
+    """Convert wind direction in degrees to 8-point compass string (N, NE, E, ...)."""
     if degrees is None:
         return None
     index = round(degrees / 45) % 8
@@ -106,7 +121,20 @@ def calculate_sager_forecast(
     delta_hpa: float,
     wind_degrees: float | None = None,
 ) -> str:
-    """Упрощённый прогноз Sager — возвращает translation key (без ветра)."""
+    """Calculate simplified Sager forecast (returns translation key).
+
+    The classic Sager algorithm uses pressure, 3-hour trend, and wind direction.
+    This implementation covers the pressure/trend logic; wind direction could
+    be added for more granularity.
+
+    Args:
+        pressure_hpa: Current pressure (preferably sea-level corrected) in hPa.
+        delta_hpa: Pressure change over ~3 hours.
+        wind_degrees: Optional wind direction in degrees.
+
+    Returns:
+        Translation key for the Sager forecast state.
+    """
     trend = classify_pressure_trend(delta_hpa)
 
     if pressure_hpa > 1020:
