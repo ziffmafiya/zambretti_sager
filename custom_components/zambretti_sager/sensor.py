@@ -6,6 +6,7 @@ from datetime import datetime
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.const import PERCENTAGE
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -33,6 +34,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
         PrecipitationProbability(coordinator),
         LastUpdateSensor(coordinator),
     ])
+
+    # 1.9.72 registered Last Update as diagnostic (hidden from Sensors).
+    # Clear that category so it appears with the other sensors.
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.entry_id}_last_update"
+    )
+    if entity_id:
+        registry.async_update_entity(entity_id, entity_category=None)
 
 
 def _trend_label(delta: float) -> str:
@@ -358,16 +368,25 @@ class PrecipitationProbability(WeatherSensorBase):
 
 
 class LastUpdateSensor(WeatherSensorBase):
-    """Diagnostic sensor showing the timestamp of the last successful update."""
+    """Sensor showing the timestamp of the last successful update."""
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
-        """Initialize the last update diagnostic sensor."""
+        """Initialize the last update sensor."""
         super().__init__(coordinator)
         self._attr_name = "Last Update"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_last_update"
         self._attr_icon = "mdi:clock-time-four"
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
-        self._attr_entity_category = "diagnostic"
+        self._attr_translation_key = "last_update"
+        # Always available once the coordinator has produced at least one snapshot,
+        # even if pressure data itself is temporarily unavailable.
+        self._attr_force_update = True
+
+    @property
+    def available(self) -> bool:
+        """Return True when a last-update timestamp exists."""
+        d = self.data
+        return d is not None and d.last_updated is not None
 
     @property
     def native_value(self) -> datetime | None:

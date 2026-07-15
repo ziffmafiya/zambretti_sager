@@ -4,7 +4,7 @@ from typing import Final
 
 DOMAIN = "zambretti_sager"
 
-VERSION = "1.9.72"
+VERSION = "1.9.73"
 
 # Frontend (Lovelace card)
 URL_BASE: Final[str] = "/zambretti_sager_card"
