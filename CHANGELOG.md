@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.72] — 2026-07-15
+
+### Added
+- **Weather entity platform** — native Home Assistant `weather` entity with current conditions and 6h/12h/24h forecasts for the built-in weather card and automations.
+- **Sager wind direction refinement** — forecast now uses wind quadrant (N/E/S/W) to refine the pressure/trend prediction when a wind sensor is configured.
+- **Last Update diagnostic sensor** — timestamp sensor showing when the coordinator last completed a successful update.
+
+---
+
 ## [1.9.71] — 2026-07-10
 
 ### Added

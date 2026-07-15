@@ -52,6 +52,7 @@ class ForecastData:
     humidity: float | None = None       # Relative humidity (%)
     altitude: float | None = None       # Station altitude (meters)
     is_night: bool = False              # True if sun is below horizon
+    last_updated: datetime.datetime | None = None  # UTC timestamp of this snapshot
 
 
 class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
@@ -194,6 +195,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
             humidity=humidity,
             altitude=self.altitude,
             is_night=is_night,
+            last_updated=dt_util.utcnow(),
         )
 
     def _get_temperature(self) -> float:

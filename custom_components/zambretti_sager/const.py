@@ -4,7 +4,7 @@ from typing import Final
 
 DOMAIN = "zambretti_sager"
 
-VERSION = "1.9.71"
+VERSION = "1.9.72"
 
 # Frontend (Lovelace card)
 URL_BASE: Final[str] = "/zambretti_sager_card"
@@ -75,6 +75,18 @@ SAGER_TREND_SLOW = 0.7
 # 8-point wind compass directions
 WIND_COMPASS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
+# Wind direction quadrants for Sager algorithm refinement
+WIND_QUADRANTS: Final[dict[str, str]] = {
+    "N": "northerly",
+    "NE": "northerly",
+    "E": "easterly",
+    "SE": "easterly",
+    "S": "southerly",
+    "SW": "southerly",
+    "W": "westerly",
+    "NW": "westerly",
+}
+
 # Keywords in entity_id or attributes that suggest the sensor already reports
 # sea-level pressure (MSLP/QNH), so we shouldn't apply altitude correction again
 SEA_LEVEL_SENSOR_HINTS = (
@@ -116,16 +128,144 @@ def wind_degrees_to_compass(degrees: float | None) -> str | None:
     return WIND_COMPASS[index]
 
 
+def _get_wind_modifier(wind_degrees: float | None) -> str | None:
+    """Convert wind direction to a Sager wind quadrant modifier."""
+    if wind_degrees is None:
+        return None
+    compass = wind_degrees_to_compass(wind_degrees)
+    return WIND_QUADRANTS.get(compass)
+
+
+# Sager wind-enhanced forecast table.
+# First key = pressure zone ("fair", "unsettled", "changeable")
+# Second key = trend from classify_pressure_trend()
+# Third key = wind modifier or None (backward compatible fallback)
+_SAGER_WIND_TABLE: Final[dict[str, dict[str, dict[str | None, str]]]] = {
+    "fair": {
+        "rising_rapidly": {
+            None: "sager_fair_improving",
+            "northerly": "sager_fair_improving",
+            "easterly": "sager_fair_improving",
+            "southerly": "sager_fair_tending_to_deteriorate",
+            "westerly": "sager_variable_slowly_improving",
+        },
+        "rising_slowly": {
+            None: "sager_fair_improving",
+            "northerly": "sager_fair_improving",
+            "easterly": "sager_fair_improving",
+            "southerly": "sager_fair_tending_to_deteriorate",
+            "westerly": "sager_variable_slowly_improving",
+        },
+        "falling_rapidly": {
+            None: "sager_fair_tending_to_deteriorate",
+            "northerly": "sager_fair_tending_to_deteriorate",
+            "easterly": "sager_variable_slowly_deteriorating",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_changeable_becoming_more_unsettled",
+        },
+        "falling_slowly": {
+            None: "sager_fair_tending_to_deteriorate",
+            "northerly": "sager_fair_tending_to_deteriorate",
+            "easterly": "sager_variable_slowly_deteriorating",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_changeable_becoming_more_unsettled",
+        },
+        "steady": {
+            None: "sager_fair_no_change",
+            "northerly": "sager_fair_no_change",
+            "easterly": "sager_variable_some_change",
+            "southerly": "sager_fair_tending_to_deteriorate",
+            "westerly": "sager_variable_some_change",
+        },
+    },
+    "unsettled": {
+        "rising_rapidly": {
+            None: "sager_unsettled_probably_improving",
+            "northerly": "sager_unsettled_probably_improving",
+            "easterly": "sager_unsettled_probably_improving",
+            "southerly": "sager_unsettled_rain_at_times",
+            "westerly": "sager_variable_slowly_improving",
+        },
+        "rising_slowly": {
+            None: "sager_unsettled_probably_improving",
+            "northerly": "sager_unsettled_probably_improving",
+            "easterly": "sager_unsettled_probably_improving",
+            "southerly": "sager_unsettled_rain_at_times",
+            "westerly": "sager_variable_slowly_improving",
+        },
+        "falling_rapidly": {
+            None: "sager_unsettled_rain_likely",
+            "northerly": "sager_unsettled_rain_at_times",
+            "easterly": "sager_unsettled_rain_at_times",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_unsettled_rain_likely",
+        },
+        "falling_slowly": {
+            None: "sager_unsettled_rain_likely",
+            "northerly": "sager_unsettled_rain_at_times",
+            "easterly": "sager_unsettled_rain_at_times",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_unsettled_rain_likely",
+        },
+        "steady": {
+            None: "sager_unsettled_rain_at_times",
+            "northerly": "sager_unsettled_rain_at_times",
+            "easterly": "sager_variable_some_change",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_changeable_becoming_more_unsettled",
+        },
+    },
+    "changeable": {
+        "rising_rapidly": {
+            None: "sager_changeable_becoming_fairer",
+            "northerly": "sager_changeable_becoming_fairer",
+            "easterly": "sager_changeable_becoming_fairer",
+            "southerly": "sager_variable_slowly_improving",
+            "westerly": "sager_variable_slowly_improving",
+        },
+        "falling_rapidly": {
+            None: "sager_changeable_becoming_more_unsettled",
+            "northerly": "sager_changeable_becoming_more_unsettled",
+            "easterly": "sager_variable_slowly_deteriorating",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_changeable_becoming_more_unsettled",
+        },
+        "rising_slowly": {
+            None: "sager_variable_slowly_improving",
+            "northerly": "sager_variable_slowly_improving",
+            "easterly": "sager_variable_some_change",
+            "southerly": "sager_fair_tending_to_deteriorate",
+            "westerly": "sager_variable_some_change",
+        },
+        "falling_slowly": {
+            None: "sager_variable_slowly_deteriorating",
+            "northerly": "sager_variable_slowly_deteriorating",
+            "easterly": "sager_variable_some_change",
+            "southerly": "sager_unsettled_rain_likely",
+            "westerly": "sager_unsettled_rain_at_times",
+        },
+        "steady": {
+            None: "sager_variable_some_change",
+            "northerly": "sager_fair_no_change",
+            "easterly": "sager_variable_some_change",
+            "southerly": "sager_fair_tending_to_deteriorate",
+            "westerly": "sager_changeable_becoming_more_unsettled",
+        },
+    },
+}
+
+
 def calculate_sager_forecast(
     pressure_hpa: float,
     delta_hpa: float,
     wind_degrees: float | None = None,
 ) -> str:
-    """Calculate simplified Sager forecast (returns translation key).
+    """Calculate Sager forecast with wind direction refinement.
 
-    The classic Sager algorithm uses pressure, 3-hour trend, and wind direction.
-    This implementation covers the pressure/trend logic; wind direction could
-    be added for more granularity.
+    Uses pressure zone, 3-hour trend, and optional wind direction to select
+    the most appropriate forecast state. Wind direction is grouped into four
+    quadrants (northerly/easterly/southerly/westerly) that modify the base
+    pressure-trend prediction.
 
     Args:
         pressure_hpa: Current pressure (preferably sea-level corrected) in hPa.
@@ -136,28 +276,14 @@ def calculate_sager_forecast(
         Translation key for the Sager forecast state.
     """
     trend = classify_pressure_trend(delta_hpa)
+    modifier = _get_wind_modifier(wind_degrees)
 
     if pressure_hpa > 1020:
-        if trend in ("rising_rapidly", "rising_slowly"):
-            return "sager_fair_improving"
-        elif trend in ("falling_rapidly", "falling_slowly"):
-            return "sager_fair_tending_to_deteriorate"
-        else:
-            return "sager_fair_no_change"
+        zone = "fair"
     elif pressure_hpa < 1005:
-        if trend in ("falling_rapidly", "falling_slowly"):
-            return "sager_unsettled_rain_likely"
-        elif trend in ("rising_rapidly", "rising_slowly"):
-            return "sager_unsettled_probably_improving"
-        else:
-            return "sager_unsettled_rain_at_times"
-    elif trend == "rising_rapidly":
-        return "sager_changeable_becoming_fairer"
-    elif trend == "falling_rapidly":
-        return "sager_changeable_becoming_more_unsettled"
-    elif trend == "rising_slowly":
-        return "sager_variable_slowly_improving"
-    elif trend == "falling_slowly":
-        return "sager_variable_slowly_deteriorating"
+        zone = "unsettled"
     else:
-        return "sager_variable_some_change"
+        zone = "changeable"
+
+    row = _SAGER_WIND_TABLE[zone][trend]
+    return row.get(modifier, row[None])

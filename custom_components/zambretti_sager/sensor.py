@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from datetime import datetime
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -29,6 +31,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         ZambrettiForecast12h(coordinator),
         ZambrettiForecast24h(coordinator),
         PrecipitationProbability(coordinator),
+        LastUpdateSensor(coordinator),
     ])
 
 
@@ -352,3 +355,24 @@ class PrecipitationProbability(WeatherSensorBase):
         delta = d.p_now - p_3h
         attrs = self._base_attrs(delta)
         return attrs
+
+
+class LastUpdateSensor(WeatherSensorBase):
+    """Diagnostic sensor showing the timestamp of the last successful update."""
+
+    def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the last update diagnostic sensor."""
+        super().__init__(coordinator)
+        self._attr_name = "Last Update"
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_last_update"
+        self._attr_icon = "mdi:clock-time-four"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_entity_category = "diagnostic"
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the UTC timestamp of the last successful coordinator update."""
+        d = self.data
+        if d is None:
+            return None
+        return d.last_updated

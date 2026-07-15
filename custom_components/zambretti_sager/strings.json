@@ -57,5 +57,12 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "last_update": {
+        "name": "Last Update"
+      }
+    }
   }
 }

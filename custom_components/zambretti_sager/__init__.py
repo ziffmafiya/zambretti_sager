@@ -18,7 +18,7 @@ from .frontend import JSModuleRegistration
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[str] = ["sensor"]
+PLATFORMS: list[str] = ["sensor", "weather"]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
