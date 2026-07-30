@@ -352,10 +352,16 @@ async def async_create_coordinator(
         altitude = await get_elevation(hass, latitude, longitude)
         if altitude is not None:
             _LOGGER.info("Altitude for (%.6f, %.6f): %.1f m", latitude, longitude, altitude)
-        else:
-            _LOGGER.warning(
-                "Could not determine altitude, sea level correction will use raw pressure"
-            )
+
+    # Fallback to Home Assistant's configured elevation if API lookup failed or unavailable
+    if altitude is None and getattr(hass.config, "elevation", None) is not None:
+        altitude = float(hass.config.elevation)
+        _LOGGER.info("Using Home Assistant configured elevation: %.1f m", altitude)
+
+    if altitude is None:
+        _LOGGER.warning(
+            "Could not determine altitude, sea level correction will use raw pressure"
+        )
 
     coordinator = ZambrettiSagerCoordinator(hass, entry, altitude)
     try:

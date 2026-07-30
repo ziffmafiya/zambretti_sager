@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.74] — 2026-07-30
+
+### Fixed
+- **Altitude lookup fallbacks** — added secondary Open-Meteo elevation API fallback and system `hass.config.elevation` fallback when primary Open-Elevation lookup is unavailable.
+
+---
+
 ## [1.9.73] — 2026-07-15
 
 ### Fixed

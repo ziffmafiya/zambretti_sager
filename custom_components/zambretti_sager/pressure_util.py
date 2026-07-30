@@ -23,7 +23,7 @@ _HPA_UNITS = frozenset({
 
 
 async def get_elevation(hass, latitude, longitude):
-    """Get elevation above sea level via Open-Elevation API.
+    """Get elevation above sea level via Open-Elevation API or Open-Meteo API.
 
     Args:
         hass: Home Assistant instance.
@@ -33,15 +33,36 @@ async def get_elevation(hass, latitude, longitude):
     Returns:
         Elevation in meters, or None if lookup fails.
     """
-    url = f"https://api.open-elevation.com/api/v1/lookup?locations={latitude},{longitude}"
     session = async_get_clientsession(hass)
+
+    # 1. Try Open-Elevation API
+    url_open_elevation = (
+        f"https://api.open-elevation.com/api/v1/lookup?locations={latitude},{longitude}"
+    )
     try:
-        async with session.get(url, timeout=10) as response:
+        async with session.get(url_open_elevation, timeout=10) as response:
             if response.status == 200:
                 data = await response.json()
-                return data["results"][0]["elevation"]
+                results = data.get("results")
+                if results and "elevation" in results[0]:
+                    return float(results[0]["elevation"])
     except Exception as err:
-        _LOGGER.warning("Failed to get elevation from API: %s", err)
+        _LOGGER.debug("Failed to get elevation from Open-Elevation API: %s", err)
+
+    # 2. Try Open-Meteo API fallback
+    url_open_meteo = (
+        f"https://api.open-meteo.com/v1/elevation?latitude={latitude}&longitude={longitude}"
+    )
+    try:
+        async with session.get(url_open_meteo, timeout=10) as response:
+            if response.status == 200:
+                data = await response.json()
+                elevations = data.get("elevation")
+                if elevations and isinstance(elevations, list) and len(elevations) > 0:
+                    return float(elevations[0])
+    except Exception as err:
+        _LOGGER.debug("Failed to get elevation from Open-Meteo API: %s", err)
+
     return None
 
 
