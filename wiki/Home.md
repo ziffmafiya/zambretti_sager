@@ -4,7 +4,7 @@ A **Home Assistant custom integration** that forecasts weather using the classic
 
 | | |
 |---|---|
-| **Version** | 1.9.10 |
+| **Version** | 1.9.75 |
 | **Domain** | `zambretti_sager` |
 | **HACS** | ✅ Supported |
 | **License** | MIT |
@@ -14,13 +14,15 @@ A **Home Assistant custom integration** that forecasts weather using the classic
 
 ## Features
 
+- **Native Weather Entity** — `weather` platform entity with `weather.get_forecasts` support
 - **32 Zambretti states** — detailed forecast based on 3-hour pressure trends
 - **Sager forecast** — simplified prediction from pressure and wind direction
-- **Extended forecasts** — 6, 12, and 24 hours ahead
+- **Extended forecasts** — 6, 12, and 24 hours ahead (sensors and weather entity)
 - **Precipitation probability** — 0–100% based on pressure trends and humidity
-- **Sea level pressure correction** — altitude and temperature compensation
+- **Sea level pressure correction** — altitude, Open-Meteo fallbacks, and temperature compensation
+- **Last Update sensor** — timestamp sensor for coordinator refresh tracking
 - **Lovelace card** — animated icons, night mode, pressure sparkline
-- **Localization** — English, Russian, French
+- **Localization** — English, Russian, French, Czech, Danish, German
 
 ---
 

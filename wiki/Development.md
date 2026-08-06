@@ -13,17 +13,19 @@ zambretti_sager/
 │   ├── manifest.json        # Integration metadata
 │   ├── config_flow.py       # UI setup (Config Flow)
 │   ├── coordinator.py       # DataUpdateCoordinator
-│   ├── sensor.py            # 6 sensors
+│   ├── sensor.py            # Forecast & precipitation sensors
+│   ├── weather.py           # Native WeatherEntity platform
 │   ├── const.py             # Constants, Sager algorithm, Zambretti mapping
 │   ├── pressure_util.py     # Pressure utilities, sea level correction
 │   ├── strings.json         # Config flow strings
-│   ├── translations/        # en.json, ru.json, fr.json
+│   ├── translations/        # en, ru, fr, cs, da, de, etc.
 │   └── frontend/
 │       ├── __init__.py
 │       └── zambretti-weather-card.js
 ├── .github/workflows/
 │   ├── hacs.yaml            # HACS validation
-│   └── hassfest.yaml        # Home Assistant validation
+│   ├── hassfest.yaml        # Home Assistant validation
+│   └── release.yaml         # GitHub release automation
 ├── hacs.json
 ├── pyproject.toml
 ├── CHANGELOG.md
@@ -41,18 +43,18 @@ zambretti_sager/
 - Subscribes to pressure sensor state-change events (v1.9.2+)
 - Update interval: 5 minutes
 
-### Sensors (`sensor.py`)
+### Entity classes
 
-6 sensor classes, all using coordinator data:
-
-| Class | Unique ID suffix |
-|---|---|
-| `ZambrettiForecastSensor` | `_zambretti` |
-| `SagerForecastSensor` | `_sager` |
-| `ZambrettiForecast6hSensor` | `_zambretti_6h` |
-| `ZambrettiForecast12hSensor` | `_zambretti_12h` |
-| `ZambrettiForecast24hSensor` | `_zambretti_24h` |
-| `PrecipitationProbabilitySensor` | `_precipitation` |
+| Class | Platform | Unique ID suffix |
+|---|---|---|
+| `ZambrettiWeather` | `weather` | `_weather` |
+| `ZambrettiForecastSensor` | `sensor` | `_zambretti` |
+| `SagerForecastSensor` | `sensor` | `_sager` |
+| `ZambrettiForecast6hSensor` | `sensor` | `_zambretti_6h` |
+| `ZambrettiForecast12hSensor` | `sensor` | `_zambretti_12h` |
+| `ZambrettiForecast24hSensor` | `sensor` | `_zambretti_24h` |
+| `PrecipitationProbabilitySensor` | `sensor` | `_precipitation` |
+| `LastUpdateSensor` | `sensor` | `_last_update` |
 
 ### Frontend card
 

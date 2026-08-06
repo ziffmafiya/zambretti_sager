@@ -6,16 +6,33 @@ The integration creates **6 sensors** grouped under a single **Weather Forecaste
 
 ## Entity list
 
-| Sensor | Entity ID (example) | Description |
+| Sensor / Entity | Entity ID (example) | Description |
 |---|---|---|
+| **Weather Station** | `weather.weather_station` | Native Home Assistant weather entity with forecasts |
 | **Zambretti Forecast** | `sensor.zambretti_forecast` | Current detailed forecast (1 of 32 states) |
 | **Sager Forecast** | `sensor.sager_forecast` | Simplified forecast from pressure and wind |
 | **Zambretti Forecast 6h** | `sensor.zambretti_forecast_6h` | Forecast 6 hours ahead |
 | **Zambretti Forecast 12h** | `sensor.zambretti_forecast_12h` | Forecast 12 hours ahead |
 | **Zambretti Forecast 24h** | `sensor.zambretti_forecast_24h` | Forecast 24 hours ahead |
 | **Precipitation Probability** | `sensor.precipitation_probability` | Chance of precipitation, 0–100% |
+| **Last Update** | `sensor.last_update` | Timestamp of the last successful coordinator refresh |
 
 > Exact entity IDs depend on your HA configuration. Look for the **Weather Forecaster** device in **Settings → Devices & Services**.
+
+---
+
+## Native Weather Entity (`weather.weather_station`)
+
+The integration exposes a standard Home Assistant `weather` platform entity.
+
+- **Supported Features**: `FORECAST_HOURLY`, `FORECAST_DAILY` (`WeatherEntityFeature`)
+- **Supported Service**: Works with the native `weather.get_forecasts` service call in Home Assistant.
+- **Attributes**:
+  - `condition` — mapped HA weather state (`sunny`, `partlycloudy`, `rainy`, `lightning-rainy`, etc.)
+  - `temperature` / `pressure` / `humidity` — current metrics
+  - `wind_speed` — automatically converted from input sensor units (`km/h`, `mph`, `knots`) to native `m/s`
+  - `wind_bearing` — wind direction in degrees (0–360°) or converted compass direction
+  - `forecast` — 6h, 12h, and 24h forecast objects containing predicted pressure and conditions
 
 ---
 
