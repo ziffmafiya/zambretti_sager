@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from homeassistant.components.weather import Forecast, WeatherEntity
+from homeassistant.components.weather import (
+    Forecast,
+    WeatherEntity,
+    WeatherEntityFeature,
+)
 from homeassistant.const import UnitOfPressure, UnitOfSpeed, UnitOfTemperature
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -72,6 +76,10 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
     _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_native_pressure_unit = UnitOfPressure.HPA
     _attr_native_wind_speed_unit = UnitOfSpeed.METERS_PER_SECOND
+    _attr_supported_features = (
+        WeatherEntityFeature.FORECAST_HOURLY
+        | WeatherEntityFeature.FORECAST_DAILY
+    )
     _attr_has_entity_name = True
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
@@ -125,11 +133,19 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
         return round(d.wind_speed, 1) if d.wind_speed is not None else None
 
     @property
-    def native_wind_bearing(self) -> float | None:
+    def wind_bearing(self) -> float | None:
         d = self.data
         if not d:
             return None
         return round(d.wind_degrees, 1) if d.wind_degrees is not None else None
+
+    async def async_forecast_hourly(self) -> list[Forecast] | None:
+        """Return the hourly forecast."""
+        return self.forecast
+
+    async def async_forecast_daily(self) -> list[Forecast] | None:
+        """Return the daily forecast."""
+        return self.forecast
 
     @property
     def forecast(self) -> list[Forecast] | None:
@@ -159,7 +175,7 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
                 delta = (d.p_now - p_ref) / h * 24
                 p_pred = d.p_now + delta
 
-            state = _zambretti_state(p_pred, delta)
+            state = _zambretti_state(p_pred, d.p_now)
             cond = ZAMBRETTI_TO_CONDITION.get(state) if state else None
             forecast_time = (now + timedelta(hours=hours)).isoformat()
 

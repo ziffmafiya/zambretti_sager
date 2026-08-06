@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.9.75] — 2026-08-06
+
+### Fixed
+- **Zambretti forecast state calculation** — fixed reference pressure parameter in `weather.py:forecast()`, resolving constant 90% rain probability (thanks @DmitryMikh).
+- **Wind bearing attribute** — renamed `native_wind_bearing` to `wind_bearing` on `ZambrettiWeather` entity (thanks @degueins, #11).
+- **Wind speed unit conversion & option fallback** — fixed config option loading and added automatic conversion of source sensor units (`km/h`, `mph`, `knots`) to `m/s` (thanks @degueins, #11).
+- **Forecast service 500 error** — declared `WeatherEntityFeature` flags and implemented `async_forecast_hourly` / `async_forecast_daily` for `weather.get_forecasts` compatibility (thanks @degueins, #11).
+
+---
+
 ## [1.9.74] — 2026-07-30
 
 ### Fixed

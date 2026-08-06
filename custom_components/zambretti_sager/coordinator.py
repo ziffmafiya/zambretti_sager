@@ -72,44 +72,42 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         self._last_pressure_id: str | None = None
 
         # Load sensor entity IDs from config entry
-        self.pressure_id = entry.options.get(
-            CONF_PRESSURE_SENSOR, entry.data[CONF_PRESSURE_SENSOR]
+        self.pressure_id = (
+            entry.options.get(CONF_PRESSURE_SENSOR)
+            or entry.data[CONF_PRESSURE_SENSOR]
         )
-        self.wind_id = entry.options.get(CONF_WIND_SENSOR, entry.data.get(CONF_WIND_SENSOR))
-        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR, entry.data.get(CONF_WIND_SPEED_SENSOR))
-        self.temp_id = entry.options.get(
-            CONF_TEMPERATURE_SENSOR, entry.data.get(CONF_TEMPERATURE_SENSOR)
+        self.wind_id = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
+        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(CONF_WIND_SPEED_SENSOR)
+        self.temp_id = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(CONF_TEMPERATURE_SENSOR)
+        self.humidity_id = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(CONF_HUMIDITY_SENSOR)
+        self.use_sea_level = (
+            entry.options.get(CONF_USE_SEA_LEVEL)
+            if CONF_USE_SEA_LEVEL in entry.options
+            else entry.data.get(CONF_USE_SEA_LEVEL, False)
         )
-        self.humidity_id = entry.options.get(
-            CONF_HUMIDITY_SENSOR, entry.data.get(CONF_HUMIDITY_SENSOR)
-        )
-        self.use_sea_level = entry.options.get(
-            CONF_USE_SEA_LEVEL, entry.data.get(CONF_USE_SEA_LEVEL, False)
-        )
-        self.latitude = entry.options.get(CONF_LATITUDE, entry.data.get(CONF_LATITUDE))
-        self.longitude = entry.options.get(CONF_LONGITUDE, entry.data.get(CONF_LONGITUDE))
+        self.latitude = entry.options.get(CONF_LATITUDE) or entry.data.get(CONF_LATITUDE)
+        self.longitude = entry.options.get(CONF_LONGITUDE) or entry.data.get(CONF_LONGITUDE)
 
     def _update_sensor_ids(self) -> None:
         """Update sensor entity IDs from config entry on reload."""
         entry = self.entry
-        new_pressure_id = entry.options.get(
-            CONF_PRESSURE_SENSOR, entry.data[CONF_PRESSURE_SENSOR]
+        new_pressure_id = (
+            entry.options.get(CONF_PRESSURE_SENSOR)
+            or entry.data[CONF_PRESSURE_SENSOR]
         )
         if new_pressure_id != self._last_pressure_id:
             self._sea_level_warning_logged = False
             self._last_pressure_id = new_pressure_id
 
         self.pressure_id = new_pressure_id
-        self.wind_id = entry.options.get(CONF_WIND_SENSOR, entry.data.get(CONF_WIND_SENSOR))
-        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR, entry.data.get(CONF_WIND_SPEED_SENSOR))
-        self.temp_id = entry.options.get(
-            CONF_TEMPERATURE_SENSOR, entry.data.get(CONF_TEMPERATURE_SENSOR)
-        )
-        self.humidity_id = entry.options.get(
-            CONF_HUMIDITY_SENSOR, entry.data.get(CONF_HUMIDITY_SENSOR)
-        )
-        self.use_sea_level = entry.options.get(
-            CONF_USE_SEA_LEVEL, entry.data.get(CONF_USE_SEA_LEVEL, False)
+        self.wind_id = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
+        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(CONF_WIND_SPEED_SENSOR)
+        self.temp_id = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(CONF_TEMPERATURE_SENSOR)
+        self.humidity_id = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(CONF_HUMIDITY_SENSOR)
+        self.use_sea_level = (
+            entry.options.get(CONF_USE_SEA_LEVEL)
+            if CONF_USE_SEA_LEVEL in entry.options
+            else entry.data.get(CONF_USE_SEA_LEVEL, False)
         )
 
     def _start_pressure_watcher(self) -> None:
@@ -264,22 +262,71 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         state = self.hass.states.get(self.wind_id)
         if not state or state.state in ("unknown", "unavailable"):
             return None
+
+        # Check numeric state first
         try:
             return float(state.state)
         except ValueError:
-            return None
+            pass
+
+        # Try attributes for numeric bearing/direction
+        for attr in ("wind_bearing", "wind_degrees", "bearing", "degrees"):
+            val = state.attributes.get(attr)
+            if val is not None:
+                try:
+                    return float(val)
+                except ValueError:
+                    pass
+
+        # Try converting compass string state (e.g. "N", "NE", "SW", etc.)
+        compass_map = {
+            "N": 0.0, "NNE": 22.5, "NE": 45.0, "ENE": 67.5,
+            "E": 90.0, "ESE": 112.5, "SE": 135.0, "SSE": 157.5,
+            "S": 180.0, "SSW": 202.5, "SW": 225.0, "WSW": 247.5,
+            "W": 270.0, "WNW": 292.5, "NW": 315.0, "NNW": 337.5,
+        }
+        state_str = str(state.state).upper().strip()
+        return compass_map.get(state_str)
 
     def _get_wind_speed(self) -> float | None:
-        """Return wind speed or None."""
-        if not self.wind_speed_id:
+        """Return wind speed in m/s or None."""
+        sensor_id = self.wind_speed_id or self.wind_id
+        if not sensor_id:
             return None
-        state = self.hass.states.get(self.wind_speed_id)
+        state = self.hass.states.get(sensor_id)
         if not state or state.state in ("unknown", "unavailable"):
             return None
+
+        raw_val: float | None = None
         try:
-            return float(state.state)
+            raw_val = float(state.state)
         except ValueError:
+            for attr in ("wind_speed", "speed"):
+                val = state.attributes.get(attr)
+                if val is not None:
+                    try:
+                        raw_val = float(val)
+                        break
+                    except ValueError:
+                        pass
+
+        if raw_val is None:
             return None
+
+        # Convert to m/s based on sensor unit_of_measurement attribute if present
+        unit = state.attributes.get("unit_of_measurement")
+        if unit and isinstance(unit, str):
+            unit_clean = unit.lower().strip()
+            if unit_clean in ("km/h", "kmh"):
+                return raw_val / 3.6
+            if unit_clean in ("mph", "mi/h"):
+                return raw_val * 0.44704
+            if unit_clean in ("kn", "kts", "knot", "knots"):
+                return raw_val * 0.514444
+            if unit_clean in ("ft/s", "fps"):
+                return raw_val * 0.3048
+
+        return raw_val
 
     def _get_humidity(self) -> float | None:
         """Return relative humidity in percent or None."""
