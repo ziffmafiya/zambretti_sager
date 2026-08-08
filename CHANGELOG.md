@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.76] — 2026-08-08
+
+### Fixed
+- **Temperature unit conversion** — added automatic Fahrenheit (°F) and Kelvin (K) to Celsius (°C) conversion in `coordinator.py:_get_temperature()`, resolving overly high temperature readings from Tempest/Imperial weather stations (thanks @bgiuriceo, #12).
+
+---
+
 ## [1.9.75] — 2026-08-06
 
 ### Fixed

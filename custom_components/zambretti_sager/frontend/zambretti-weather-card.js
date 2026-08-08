@@ -1,5 +1,5 @@
 /**
- * Zambretti & Sager Weather Card  v1.9.75
+ * Zambretti & Sager Weather Card  v1.9.76
  * Lovelace custom card for Home Assistant
  *
  * Displays Zambretti & Sager pressure-based weather forecasts as an iOS-style

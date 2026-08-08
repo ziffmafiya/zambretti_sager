@@ -197,16 +197,26 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         )
 
     def _get_temperature(self) -> float:
-        """Return current temperature or standard 15°C if unavailable."""
+        """Return current temperature in °C or standard 15°C if unavailable."""
         if not self.temp_id:
             return 15.0
         state = self.hass.states.get(self.temp_id)
         if not state or state.state in ("unknown", "unavailable"):
             return 15.0
         try:
-            return float(state.state)
+            raw_val = float(state.state)
         except ValueError:
             return 15.0
+
+        unit = state.attributes.get("unit_of_measurement")
+        if unit and isinstance(unit, str):
+            unit_clean = unit.upper().replace("°", "").strip()
+            if unit_clean == "F":
+                return (raw_val - 32.0) * 5.0 / 9.0
+            if unit_clean == "K":
+                return raw_val - 273.15
+
+        return raw_val
 
     def _is_likely_sea_level_sensor(self) -> bool:
         """Check if the pressure sensor already reports sea-level pressure (MSLP/QNH).
