@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.78] — 2026-08-22
+
+### Fixed
+- **State change event loop warning** — wrapped `async_request_refresh()` in `hass.async_create_task` when pressure sensor changes state, eliminating Python `RuntimeWarning: coroutine was never awaited`.
+
+---
+
 ## [1.9.77] — 2026-08-22
 
 ### Performance

@@ -158,7 +158,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
                     self.pressure_id,
                     new_state.state,
                 )
-                self.async_request_refresh()
+                self.hass.async_create_task(self.async_request_refresh())
 
         self._unsub_state_listener = async_track_state_change_event(
             self.hass, [self.pressure_id], _on_pressure_state_change
