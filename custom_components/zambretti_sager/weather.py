@@ -10,12 +10,14 @@ from homeassistant.components.weather import (
     WeatherEntityFeature,
 )
 from homeassistant.const import UnitOfPressure, UnitOfSpeed, UnitOfTemperature
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, VERSION, ZAMBRETTI_MAPPING
-from .coordinator import ZambrettiSagerCoordinator
+from .coordinator import ZambrettiConfigEntry, ZambrettiSagerCoordinator
 
 ZAMBRETTI_TO_CONDITION: dict[str, str] = {
     "settled_fine": "sunny",
@@ -48,24 +50,13 @@ ZAMBRETTI_TO_CONDITION: dict[str, str] = {
 }
 
 
-def _zambretti_index(p_now: float, delta: float) -> int:
-    if delta <= -1.6:
-        z = round(127 - 0.12 * p_now)
-    elif delta >= 1.6:
-        z = round(185 - 0.16 * p_now)
-    else:
-        z = round(144 - 0.13 * p_now)
-    return max(1, min(z, 32))
-
-
-def _zambretti_state(p_now: float, p_ref: float) -> str | None:
-    delta = p_now - p_ref
-    return ZAMBRETTI_MAPPING.get(_zambretti_index(p_now, delta), "stable")
-
-
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ZambrettiConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Set up the Zambretti & Sager weather entity."""
-    coordinator: ZambrettiSagerCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     async_add_entities([ZambrettiWeather(coordinator)])
 
 
@@ -101,43 +92,36 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
     @property
     def condition(self) -> str | None:
         d = self.data
-        if not d or not d.available or d.p_now is None:
+        if not d or not d.available or not d.zambretti_state:
             return None
-        p_ref = d.p_3h if d.p_3h is not None else d.p_now
-        state = _zambretti_state(d.p_now, p_ref)
-        return ZAMBRETTI_TO_CONDITION.get(state) if state else None
+        return ZAMBRETTI_TO_CONDITION.get(d.zambretti_state)
 
     @property
     def native_temperature(self) -> float | None:
-        return self.coordinator._get_temperature()
+        d = self.data
+        return d.temperature if d else None
 
     @property
     def native_pressure(self) -> float | None:
         d = self.data
         if not d or d.p_now is None:
             return None
-        return round(d.p_now, 1)
+        return d.p_now
 
     @property
     def native_humidity(self) -> float | None:
         d = self.data
-        if not d:
-            return None
-        return round(d.humidity, 1) if d.humidity is not None else None
+        return d.humidity if d else None
 
     @property
     def native_wind_speed(self) -> float | None:
         d = self.data
-        if not d:
-            return None
-        return round(d.wind_speed, 1) if d.wind_speed is not None else None
+        return d.wind_speed if d else None
 
     @property
     def wind_bearing(self) -> float | None:
         d = self.data
-        if not d:
-            return None
-        return round(d.wind_degrees, 1) if d.wind_degrees is not None else None
+        return d.wind_degrees if d else None
 
     async def async_forecast_hourly(self) -> list[Forecast] | None:
         """Return the hourly forecast."""
@@ -156,36 +140,23 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
         now = dt_util.utcnow()
         items: list[Forecast] = []
 
-        p_ref_3h = d.p_3h if d.p_3h is not None else d.p_now
+        forecast_defs = [
+            (6, d.zambretti_6h, d.predicted_p_6h),
+            (12, d.zambretti_12h, d.predicted_p_12h),
+            (24, d.zambretti_24h, d.predicted_p_24h),
+        ]
 
-        for hours in (6, 12, 24):
-            if hours == 6:
-                delta = (d.p_now - p_ref_3h) * 2
-                p_pred = d.p_now + delta
-            elif hours == 12:
-                p_ref = d.p_6h if d.p_6h is not None else p_ref_3h
-                h = 6 if d.p_6h is not None else 3
-                delta = (d.p_now - p_ref) / h * 12
-                p_pred = d.p_now + delta
-            else:
-                p_ref = d.p_12h if d.p_12h is not None else (
-                    d.p_6h if d.p_6h is not None else p_ref_3h
-                )
-                h = 12 if d.p_12h is not None else (6 if d.p_6h is not None else 3)
-                delta = (d.p_now - p_ref) / h * 24
-                p_pred = d.p_now + delta
-
-            state = _zambretti_state(p_pred, d.p_now)
+        for hours, state, p_pred in forecast_defs:
             cond = ZAMBRETTI_TO_CONDITION.get(state) if state else None
             forecast_time = (now + timedelta(hours=hours)).isoformat()
 
             items.append(Forecast(
                 datetime=forecast_time,
                 condition=cond,
-                native_temperature=self.native_temperature,
-                native_temperature_unit=self.native_temperature_unit,
-                native_pressure=round(p_pred, 1),
-                native_pressure_unit=self.native_pressure_unit,
+                native_temperature=d.temperature,
+                native_temperature_unit=self._attr_native_temperature_unit,
+                native_pressure=p_pred,
+                native_pressure_unit=self._attr_native_pressure_unit,
             ))
 
         return items

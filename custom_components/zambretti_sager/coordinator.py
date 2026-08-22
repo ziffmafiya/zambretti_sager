@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+from collections import deque
 from dataclasses import dataclass, field
 
 from homeassistant.config_entries import ConfigEntry
@@ -24,6 +25,12 @@ from .const import (
     CONF_WIND_SENSOR,
     CONF_WIND_SPEED_SENSOR,
     DOMAIN,
+    ZAMBRETTI_MAPPING,
+    calculate_precipitation_probability,
+    calculate_sager_forecast,
+    calculate_zambretti_index,
+    get_trend_label,
+    wind_degrees_to_compass,
 )
 from .pressure_util import (
     calculate_sea_level_pressure,
@@ -36,6 +43,9 @@ _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVAL = datetime.timedelta(minutes=5)
 HISTORY_HOURS = (3, 6, 12)
+BUFFER_MAX_AGE = datetime.timedelta(hours=25)
+
+type ZambrettiConfigEntry = ConfigEntry["ZambrettiSagerCoordinator"]
 
 
 @dataclass
@@ -48,11 +58,26 @@ class ForecastData:
     p_6h: float | None = None           # Pressure 6 hours ago
     p_12h: float | None = None          # Pressure 12 hours ago
     wind_degrees: float | None = None   # Wind direction in degrees
+    wind_direction: str | None = None   # Wind compass (e.g. "NW")
     wind_speed: float | None = None     # Wind speed
     humidity: float | None = None       # Relative humidity (%)
     altitude: float | None = None       # Station altitude (meters)
+    temperature: float = 15.0           # Current temperature (°C)
     is_night: bool = False              # True if sun is below horizon
     last_updated: datetime.datetime | None = None  # UTC timestamp of this snapshot
+
+    # Pre-calculated forecast fields
+    delta_3h: float | None = None       # Pressure delta over 3h
+    trend_label: str = "→ Steady"       # Trend string for attributes
+    zambretti_state: str | None = None  # Current Zambretti forecast translation key
+    sager_state: str | None = None      # Current Sager forecast translation key
+    zambretti_6h: str | None = None     # 6h Zambretti forecast translation key
+    predicted_p_6h: float | None = None # Predicted pressure in 6h
+    zambretti_12h: str | None = None    # 12h Zambretti forecast translation key
+    predicted_p_12h: float | None = None# Predicted pressure in 12h
+    zambretti_24h: str | None = None    # 24h Zambretti forecast translation key
+    predicted_p_24h: float | None = None# Predicted pressure in 24h
+    precip_probability: int | None = None # Precipitation probability 0-100%
 
 
 class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
@@ -71,6 +96,10 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         self._unsub_state_listener = None
         self._last_pressure_id: str | None = None
 
+        # In-memory rolling buffer for historical pressure readings: (utc_datetime, pressure_hpa)
+        self._history_buffer: deque[tuple[datetime.datetime, float]] = deque()
+        self._history_warmed = False
+
         # Load sensor entity IDs from config entry
         self.pressure_id = (
             entry.options.get(CONF_PRESSURE_SENSOR)
@@ -88,6 +117,9 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         self.latitude = entry.options.get(CONF_LATITUDE) or entry.data.get(CONF_LATITUDE)
         self.longitude = entry.options.get(CONF_LONGITUDE) or entry.data.get(CONF_LONGITUDE)
 
+        # Register cleanup on unload
+        entry.async_on_unload(self._stop_pressure_watcher)
+
     def _update_sensor_ids(self) -> None:
         """Update sensor entity IDs from config entry on reload."""
         entry = self.entry
@@ -98,6 +130,8 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         if new_pressure_id != self._last_pressure_id:
             self._sea_level_warning_logged = False
             self._last_pressure_id = new_pressure_id
+            self._history_buffer.clear()
+            self._history_warmed = False
 
         self.pressure_id = new_pressure_id
         self.wind_id = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
@@ -124,7 +158,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
                     self.pressure_id,
                     new_state.state,
                 )
-                self.hass.async_create_task(self.async_refresh())
+                self.async_request_refresh()
 
         self._unsub_state_listener = async_track_state_change_event(
             self.hass, [self.pressure_id], _on_pressure_state_change
@@ -165,35 +199,99 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
 
         # Apply sea-level correction if enabled
         p_now = self._correct_pressure(p_now_raw)
-        history_raw = await self._fetch_history_pressures()
+        temperature = self._get_temperature()
+        now_dt = dt_util.utcnow()
+
+        # Warm history buffer on first run with a single recorder query
+        if not self._history_warmed:
+            await self._warm_history_buffer()
+            self._history_warmed = True
+
+        # Append current reading and prune buffer
+        self._history_buffer.append((now_dt, p_now))
+        cutoff = now_dt - BUFFER_MAX_AGE
+        while self._history_buffer and self._history_buffer[0][0] < cutoff:
+            self._history_buffer.popleft()
+
+        history_raw = await self._fetch_history_pressures(now_dt)
         wind = self._get_wind_direction()
+        wind_direction = wind_degrees_to_compass(wind)
         wind_speed = self._get_wind_speed()
         humidity = self._get_humidity()
         is_night = self._is_nighttime()
+
+        # Historical pressures
+        p_3h = self._correct_history_pressure(history_raw.get(3), p_now)
+        p_6h = self._correct_history_pressure(history_raw.get(6), p_now)
+        p_12h = self._correct_history_pressure(history_raw.get(12), p_now)
+
+        # Pre-calculated forecasts
+        delta_3h = round(p_now - p_3h, 2)
+        trend_label = get_trend_label(delta_3h)
+        zambretti_state = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(p_now, delta_3h), "stable")
+        sager_state = calculate_sager_forecast(p_now, delta_3h, wind)
+
+        # 6h extrapolation
+        delta_6h = (p_now - p_3h) * 2
+        predicted_p_6h = round(p_now + delta_6h, 1)
+        zambretti_6h = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(predicted_p_6h, delta_6h), "stable")
+
+        # 12h extrapolation
+        p_ref_12 = p_6h if history_raw.get(6) is not None else p_3h
+        h_12 = 6 if history_raw.get(6) is not None else 3
+        delta_12h = (p_now - p_ref_12) / h_12 * 12
+        predicted_p_12h = round(p_now + delta_12h, 1)
+        zambretti_12h = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(predicted_p_12h, delta_12h), "stable")
+
+        # 24h extrapolation
+        p_ref_24 = p_12h if history_raw.get(12) is not None else (
+            p_6h if history_raw.get(6) is not None else p_3h
+        )
+        h_24 = 12 if history_raw.get(12) is not None else (
+            6 if history_raw.get(6) is not None else 3
+        )
+        delta_24h = (p_now - p_ref_24) / h_24 * 24
+        predicted_p_24h = round(p_now + delta_24h, 1)
+        zambretti_24h = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(predicted_p_24h, delta_24h), "stable")
+
+        # Precipitation probability
+        precip_prob = calculate_precipitation_probability(p_now, delta_3h, humidity)
+
         _LOGGER.debug(
-            "Coordinator update: p_now=%.1f p_3h=%s p_6h=%s p_12h=%s wind=%s wind_speed=%s humidity=%s night=%s",
+            "Coordinator update: p_now=%.1f delta_3h=%.2f zambretti=%s sager=%s night=%s (buffer: %d pts)",
             p_now,
-            history_raw.get(3),
-            history_raw.get(6),
-            history_raw.get(12),
-            wind,
-            wind_speed,
-            humidity,
+            delta_3h,
+            zambretti_state,
+            sager_state,
             is_night,
+            len(self._history_buffer),
         )
 
         return ForecastData(
             available=True,
-            p_now=p_now,
-            p_3h=self._correct_history_pressure(history_raw.get(3), p_now),
-            p_6h=self._correct_history_pressure(history_raw.get(6), p_now),
-            p_12h=self._correct_history_pressure(history_raw.get(12), p_now),
-            wind_degrees=wind,
-            wind_speed=wind_speed,
-            humidity=humidity,
-            altitude=self.altitude,
+            p_now=round(p_now, 1),
+            p_3h=round(p_3h, 1),
+            p_6h=round(p_6h, 1),
+            p_12h=round(p_12h, 1),
+            wind_degrees=round(wind, 1) if wind is not None else None,
+            wind_direction=wind_direction,
+            wind_speed=round(wind_speed, 1) if wind_speed is not None else None,
+            humidity=round(humidity, 1) if humidity is not None else None,
+            altitude=round(self.altitude, 1) if self.altitude is not None else None,
+            temperature=round(temperature, 1),
             is_night=is_night,
-            last_updated=dt_util.utcnow(),
+            last_updated=now_dt,
+            delta_3h=delta_3h,
+            trend_label=trend_label,
+            zambretti_state=zambretti_state,
+            sager_state=sager_state,
+            zambretti_6h=zambretti_6h,
+            predicted_p_6h=predicted_p_6h,
+            zambretti_12h=zambretti_12h,
+            predicted_p_12h=predicted_p_12h,
+            zambretti_24h=zambretti_24h,
+            predicted_p_24h=predicted_p_24h,
+            precip_probability=precip_prob,
         )
 
     def _get_temperature(self) -> float:
@@ -350,16 +448,77 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         except ValueError:
             return None
 
-    async def _fetch_history_pressures(self) -> dict[int, float | None]:
-        """Fetch pressure at 3, 6, and 12 hours ago in parallel."""
+    async def _warm_history_buffer(self) -> None:
+        """Warm up the in-memory pressure buffer with a single recorder query on startup."""
         now = dt_util.utcnow()
-        results = await asyncio.gather(
-            *(self._get_history_pressure(hours, now) for hours in HISTORY_HOURS)
-        )
-        return dict(zip(HISTORY_HOURS, results))
+        start_time = now - datetime.timedelta(hours=13)
+        end_time = now
+        try:
+            events = await asyncio.wait_for(
+                get_instance(self.hass).async_add_executor_job(
+                    history.get_significant_states,
+                    self.hass,
+                    start_time,
+                    end_time,
+                    [self.pressure_id],
+                ),
+                timeout=30.0,
+            )
+            if self.pressure_id in events and events[self.pressure_id]:
+                loaded = 0
+                for state in events[self.pressure_id]:
+                    t = getattr(state, "last_changed", getattr(state, "last_updated", None))
+                    if t is None:
+                        continue
+                    try:
+                        raw_p = parse_pressure_hpa_from_history(state)
+                        p = self._correct_pressure(raw_p)
+                        self._history_buffer.append((t, p))
+                        loaded += 1
+                    except (ValueError, TypeError):
+                        continue
+                _LOGGER.debug(
+                    "Warmed in-memory history buffer with %d points for %s",
+                    loaded,
+                    self.pressure_id,
+                )
+        except Exception:
+            _LOGGER.warning(
+                "Could not warm pressure history from recorder for %s, will accumulate in memory",
+                self.pressure_id,
+            )
 
-    async def _get_history_pressure(self, hours: int, now) -> float | None:
-        """Get pressure N hours ago via recorder history.
+    def _get_buffer_pressure(self, hours: int, now: datetime.datetime) -> float | None:
+        """Get pressure N hours ago from the in-memory rolling buffer without DB queries."""
+        if not self._history_buffer:
+            return None
+        target_time = now - datetime.timedelta(hours=hours)
+        max_diff = datetime.timedelta(minutes=45)
+        best_p: float | None = None
+        best_diff = max_diff
+
+        for t, p in self._history_buffer:
+            diff = abs(t - target_time)
+            if diff < best_diff:
+                best_diff = diff
+                best_p = p
+
+        return best_p
+
+    async def _fetch_history_pressures(self, now: datetime.datetime | None = None) -> dict[int, float | None]:
+        """Fetch pressure at 3, 6, and 12 hours ago (memory buffer first, fallback to recorder)."""
+        if now is None:
+            now = dt_util.utcnow()
+        results: dict[int, float | None] = {}
+        for hours in HISTORY_HOURS:
+            p = self._get_buffer_pressure(hours, now)
+            if p is None and not self._history_warmed:
+                p = await self._get_history_pressure(hours, now)
+            results[hours] = p
+        return results
+
+    async def _get_history_pressure(self, hours: int, now: datetime.datetime) -> float | None:
+        """Get pressure N hours ago via recorder history (fallback only).
 
         Uses a ±15 minute window around the target time to find the closest reading.
         """
@@ -398,7 +557,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
 
 
 async def async_create_coordinator(
-    hass: HomeAssistant, entry: ConfigEntry
+    hass: HomeAssistant, entry: ZambrettiConfigEntry
 ) -> ZambrettiSagerCoordinator:
     """Create coordinator and fetch altitude if coordinates are configured."""
     latitude = entry.options.get(CONF_LATITUDE, entry.data.get(CONF_LATITUDE))

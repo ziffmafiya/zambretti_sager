@@ -4,7 +4,7 @@ from typing import Final
 
 DOMAIN = "zambretti_sager"
 
-VERSION = "1.9.76"
+VERSION = "1.9.77"
 
 # Frontend (Lovelace card)
 URL_BASE: Final[str] = "/zambretti_sager_card"
@@ -25,6 +25,7 @@ CONF_TEMPERATURE_SENSOR = "temperature_sensor"
 CONF_HUMIDITY_SENSOR = "humidity_sensor"
 CONF_LATITUDE = "latitude"
 CONF_LONGITUDE = "longitude"
+CONF_LOCATION = "location"
 CONF_USE_SEA_LEVEL = "use_sea_level_correction"
 
 # Zambretti algorithm mapping: pressure trend index (1–32) → translation key
@@ -118,6 +119,61 @@ def classify_pressure_trend(delta_hpa: float) -> str:
     if delta_hpa <= -SAGER_TREND_SLOW:
         return "falling_slowly"
     return "steady"
+
+
+def get_trend_label(delta_hpa: float) -> str:
+    """Return human-readable trend label for attributes."""
+    trend = classify_pressure_trend(delta_hpa)
+    return {
+        "rising_rapidly": "↑↑ Rising Fast",
+        "rising_slowly":  "↑ Rising",
+        "steady":         "→ Steady",
+        "falling_slowly": "↓ Falling",
+        "falling_rapidly":"↓↓ Falling Fast",
+    }.get(trend, "→ Steady")
+
+
+def calculate_zambretti_index(p_now: float, delta_hpa: float) -> int:
+    """Calculate Zambretti index (1–32) from pressure and trend.
+
+    The original Zambretti algorithm uses different formulas for
+    falling, steady, and rising pressure trends.
+    """
+    if delta_hpa <= -1.6:        # Falling
+        z = round(127 - 0.12 * p_now)
+    elif delta_hpa >= 1.6:       # Rising
+        z = round(185 - 0.16 * p_now)
+    else:                        # Steady
+        z = round(144 - 0.13 * p_now)
+    return max(1, min(z, 32))
+
+
+def calculate_precipitation_probability(
+    p_now: float, delta_hpa: float, humidity: float | None = None
+) -> int:
+    """Calculate precipitation probability percentage based on pressure, trend, and humidity."""
+    if p_now < 1000:       base_prob = 90
+    elif p_now < 1005:     base_prob = 70
+    elif p_now < 1010:     base_prob = 50
+    elif p_now < 1015:     base_prob = 30
+    elif p_now < 1020:     base_prob = 15
+    else:                  base_prob = 5
+
+    if delta_hpa < -3.0:   trend_modifier = 30
+    elif delta_hpa < -1.6: trend_modifier = 15
+    elif delta_hpa > 3.0:  trend_modifier = -30
+    elif delta_hpa > 1.6:  trend_modifier = -15
+    else:                  trend_modifier = 0
+
+    humidity_modifier = 0
+    if humidity is not None:
+        if humidity >= 90:    humidity_modifier = 15
+        elif humidity >= 80:  humidity_modifier = 10
+        elif humidity >= 70:  humidity_modifier = 5
+        elif humidity <= 30:  humidity_modifier = -15
+        elif humidity <= 40:  humidity_modifier = -10
+
+    return round(max(0, min(100, base_prob + trend_modifier + humidity_modifier)))
 
 
 def wind_degrees_to_compass(degrees: float | None) -> str | None:

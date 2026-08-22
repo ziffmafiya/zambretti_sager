@@ -7,18 +7,18 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import CoreState, EVENT_HOMEASSISTANT_STARTED, HomeAssistant
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
-
-from typing import Any
+from homeassistant.helpers.start import async_at_start
 
 from .const import DOMAIN, VERSION
-from .coordinator import async_create_coordinator
+from .coordinator import ZambrettiConfigEntry, async_create_coordinator
 from .frontend import JSModuleRegistration
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[str] = ["sensor", "weather"]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.WEATHER]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -62,24 +62,18 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                 "/zambretti_sager_card",
             )
 
-    # If HA is already running, register immediately; otherwise wait for startup
-    if hass.state == CoreState.running:
-        await _setup_frontend()
-    else:
-        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _setup_frontend)
-
+    async_at_start(hass, _setup_frontend)
     return True
 
 
 # ── async_setup_entry ─────────────────────────────────────────────────────
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ZambrettiConfigEntry) -> bool:
     """Set up Zambretti & Sager from a config entry (via UI)."""
     _LOGGER.info("Initializing Zambretti & Sager for: %s", entry.title)
 
-    hass.data.setdefault(DOMAIN, {})
     coordinator = await async_create_coordinator(hass, entry)
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
 
     # Reload entry when options are updated
     entry.async_on_unload(entry.add_update_listener(_update_listener))
@@ -92,14 +86,7 @@ async def _update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ZambrettiConfigEntry) -> bool:
     """Unload a config entry (called when entry is removed)."""
-    # Stop the pressure sensor state listener to prevent memory leaks
-    coordinator: Any = hass.data.get(DOMAIN, {}).get(entry.entry_id)
-    if coordinator is not None:
-        coordinator._stop_pressure_watcher()  # noqa: SLF001
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-    return unload_ok

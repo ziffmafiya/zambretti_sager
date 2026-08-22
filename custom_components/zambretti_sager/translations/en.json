@@ -22,10 +22,35 @@
           "use_sea_level_correction": "Enable if using an absolute pressure sensor above sea level",
           "location": "Click on the map to set your location for altitude calculation"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Weather Station",
+        "description": "Update the sensors for your forecasting model.",
+        "data": {
+          "pressure_sensor": "Pressure Sensor",
+          "wind_sensor": "Wind Direction Sensor (optional)",
+          "wind_speed_sensor": "Wind Speed Sensor (optional)",
+          "temperature_sensor": "Temperature Sensor (optional)",
+          "humidity_sensor": "Humidity Sensor (optional)",
+          "use_sea_level_correction": "Enable Sea Level Pressure Correction",
+          "location": "Location"
+        },
+        "data_description": {
+          "pressure_sensor": "Select your barometric pressure sensor",
+          "wind_sensor": "Optional: wind direction sensor (in degrees)",
+          "wind_speed_sensor": "Optional: dedicated wind speed sensor",
+          "temperature_sensor": "Optional: used for sea level pressure correction",
+          "humidity_sensor": "Optional: improves precipitation probability accuracy",
+          "use_sea_level_correction": "Enable if using an absolute pressure sensor above sea level",
+          "location": "Click on the map to set your location for altitude calculation"
+        }
       }
     },
     "error": { "cannot_connect": "Failed to connect", "unknown": "Unexpected error" },
-    "abort": { "already_configured": "This weather station is already configured" }
+    "abort": {
+      "already_configured": "This weather station is already configured",
+      "reconfigure_successful": "Weather station reconfigured successfully"
+    }
   },
   "options": {
     "step": {
@@ -56,6 +81,7 @@
   "entity": {
     "sensor": {
       "zambretti_forecast": {
+        "name": "Zambretti Forecast",
         "state": {
           "settled_fine": "Settled Fine",
           "fine_weather": "Fine Weather",
@@ -87,6 +113,7 @@
         }
       },
       "sager_forecast": {
+        "name": "Sager Forecast",
         "state": {
           "sager_fair_improving": "Fair, improving",
           "sager_fair_tending_to_deteriorate": "Fair now, tending to deteriorate",
@@ -100,6 +127,18 @@
           "sager_variable_slowly_deteriorating": "Variable, slowly deteriorating",
           "sager_variable_some_change": "Variable, some change expected"
         }
+      },
+      "zambretti_forecast_6h": {
+        "name": "Zambretti Forecast 6h"
+      },
+      "zambretti_forecast_12h": {
+        "name": "Zambretti Forecast 12h"
+      },
+      "zambretti_forecast_24h": {
+        "name": "Zambretti Forecast 24h"
+      },
+      "precipitation_probability": {
+        "name": "Precipitation Probability"
       },
       "last_update": {
         "name": "Last Update"

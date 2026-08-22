@@ -820,6 +820,10 @@ class ZambrettiWeatherCard extends HTMLElement {
    */
   _scheduleHistoryFetch() {
     if (this._historyFetching) return;
+    if (typeof document !== "undefined" && document.hidden) {
+      this._historyFetchPending = true;
+      return;
+    }
     // Throttle: refetch at most once per 5 minutes
     const now = Date.now();
     if (this._historyFetchedAt && (now - this._historyFetchedAt) < 5 * 60 * 1000) return;
@@ -827,8 +831,8 @@ class ZambrettiWeatherCard extends HTMLElement {
     this._doFetchHistory().then(() => {
       this._historyFetching = false;
       this._historyFetchedAt = Date.now();
-      // Re-render chart and/or timeline section only
-      if (this._rendered) {
+      // Re-render chart and/or timeline section only if visible
+      if (this._rendered && (typeof document === "undefined" || !document.hidden)) {
         if (this._config.show_history) this._patchChart();
         if (this._config.show_trend)   this._patchTimeline();
       }
@@ -1097,7 +1101,7 @@ class ZambrettiWeatherCard extends HTMLElement {
     wrap.innerHTML = forecastTimeline(this._timelineSteps, L, !!this._config.compact);
   }
 
-  /** Subscribes to the background-preview custom event dispatched by the editor. */
+  /** Subscribes to events on mount. */
   connectedCallback() {
     this._bgHandler = e => {
       if (this._config && this._config.auto_theme === false) {
@@ -1107,11 +1111,24 @@ class ZambrettiWeatherCard extends HTMLElement {
       }
     };
     window.addEventListener("zambretti-bg-preview", this._bgHandler);
+
+    this._visibilityHandler = () => {
+      if (typeof document !== "undefined" && !document.hidden && this._historyFetchPending) {
+        this._historyFetchPending = false;
+        this._scheduleHistoryFetch();
+      }
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", this._visibilityHandler);
+    }
   }
 
-  /** Cleans up the background-preview event listener. */
+  /** Cleans up event listeners on unmount. */
   disconnectedCallback() {
     window.removeEventListener("zambretti-bg-preview", this._bgHandler);
+    if (this._visibilityHandler && typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", this._visibilityHandler);
+    }
   }
 
   /** Returns the current state string of a HA entity, or null if unavailable. */

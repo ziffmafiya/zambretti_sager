@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.9.77] — 2026-08-22
+
+### Performance
+- **In-Memory Rolling History Buffer** — coordinator now caches pressure history in-memory (`deque`), eliminating 864 daily recorder database queries per station and significantly speeding up update cycles.
+- **Database write reduction** — removed redundant `_attr_force_update` on forecast sensors, eliminating ~2,000 idle database state writes daily.
+- **Elevation caching** — coordinates-to-elevation results are cached to prevent repeat network queries to external elevation APIs.
+
+### Architecture & Quality Scale
+- **`ConfigEntry.runtime_data`** — migrated to typed runtime data (`type ZambrettiConfigEntry`), fully removing legacy `hass.data[DOMAIN]`.
+- **Entity translations (`strings.json`)** — added full state translations and names for Zambretti and Sager forecast sensors, enabling native localization across all Home Assistant cards and graphs.
+- **Centralized calculations** — all forecast mathematics are calculated once per update in coordinator and stored in `ForecastData`.
+- **Diagnostics (`diagnostics.py`)** — added native diagnostic platform support with automatic redaction of sensitive coordinates (Quality Scale Gold).
+- **Reconfiguration flow** — added `async_step_reconfigure` in config flow to easily reconfigure sensors from the HA device UI.
+- **Sensor category** — marked `LastUpdateSensor` with `EntityCategory.DIAGNOSTIC`.
+
+### Frontend & UX
+- **Background tab throttling** — Lovelace card pauses WebSocket history polling and animations when the dashboard tab is hidden (`document.hidden` / `visibilitychange`).
+- **Graceful degradation** — improved layout fallback when optional wind, temperature, or humidity sensors are not configured.
+
+### Testing & CI
+- **Automated test suite** — added 20 unit tests covering forecasting algorithms, pressure conversions, rolling buffer, diagnostics, and config flow.
+- **GitHub Actions CI** — added `.github/workflows/test.yaml` running `ruff` and `pytest` on Python 3.12 and 3.13.
+
+---
+
 ## [1.9.76] — 2026-08-08
 
 ### Fixed

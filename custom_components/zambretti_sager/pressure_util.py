@@ -22,8 +22,13 @@ _HPA_UNITS = frozenset({
 })
 
 
-async def get_elevation(hass, latitude, longitude):
+_ELEVATION_CACHE: dict[tuple[float, float], float] = {}
+
+
+async def get_elevation(hass, latitude: float, longitude: float) -> float | None:
     """Get elevation above sea level via Open-Elevation API or Open-Meteo API.
+
+    Caches results in memory to avoid repetitive HTTP requests across reloads.
 
     Args:
         hass: Home Assistant instance.
@@ -33,6 +38,10 @@ async def get_elevation(hass, latitude, longitude):
     Returns:
         Elevation in meters, or None if lookup fails.
     """
+    cache_key = (round(float(latitude), 4), round(float(longitude), 4))
+    if cache_key in _ELEVATION_CACHE:
+        return _ELEVATION_CACHE[cache_key]
+
     session = async_get_clientsession(hass)
 
     # 1. Try Open-Elevation API
@@ -45,7 +54,9 @@ async def get_elevation(hass, latitude, longitude):
                 data = await response.json()
                 results = data.get("results")
                 if results and "elevation" in results[0]:
-                    return float(results[0]["elevation"])
+                    elevation = float(results[0]["elevation"])
+                    _ELEVATION_CACHE[cache_key] = elevation
+                    return elevation
     except Exception as err:
         _LOGGER.debug("Failed to get elevation from Open-Elevation API: %s", err)
 
@@ -59,7 +70,9 @@ async def get_elevation(hass, latitude, longitude):
                 data = await response.json()
                 elevations = data.get("elevation")
                 if elevations and isinstance(elevations, list) and len(elevations) > 0:
-                    return float(elevations[0])
+                    elevation = float(elevations[0])
+                    _ELEVATION_CACHE[cache_key] = elevation
+                    return elevation
     except Exception as err:
         _LOGGER.debug("Failed to get elevation from Open-Meteo API: %s", err)
 
@@ -96,12 +109,14 @@ def calculate_sea_level_pressure(pressure, temperature, altitude):
 
 
 def _normalize_pressure_value(value: float, unit: str | None, entity_id: str) -> float:
-    """Normalize a numeric pressure value to hPa.
+    """Normalize a pressure reading to hPa based on its unit of measurement.
+
+    Supports hPa, mbar, Pa, inHg, mmHg, bar, and psi.
 
     Args:
-        value: Raw numeric value from the sensor.
-        unit: Unit of measurement string from state attributes.
-        entity_id: Entity ID for logging.
+        value: Numeric pressure value.
+        unit: Unit string from sensor attributes (e.g. "hPa", "mmHg", "inHg").
+        entity_id: Sensor entity id for logging.
 
     Returns:
         Pressure in hPa.
@@ -112,8 +127,17 @@ def _normalize_pressure_value(value: float, unit: str | None, entity_id: str) ->
             return value / 100
         return value
 
-    if unit == UnitOfPressure.PA:
-        return value / 100
+    u_lower = str(unit).lower().strip()
+    if u_lower in ("pa", "pascal", "pascals"):
+        return value / 100.0
+    if u_lower in ("inhg", "in_hg"):
+        return value * 33.863886666667
+    if u_lower in ("mmhg", "mm_hg", "torr"):
+        return value * 1.33322387415
+    if u_lower in ("bar", "bars"):
+        return value * 1000.0
+    if u_lower in ("psi",):
+        return value * 68.94757293168
 
     try:
         return PressureConverter.convert(value, unit, UnitOfPressure.HPA)
@@ -171,7 +195,11 @@ def parse_pressure_hpa_from_history(history_state) -> float:
         state_value = history_state.get("state") or history_state.get("s")
         if state_value is None or str(state_value).lower() in _INVALID_STATES:
             raise ValueError(f"Invalid history pressure state: {state_value!r}")
-        unit = history_state.get("unit_of_measurement") or history_state.get("uom")
+        unit = (
+            history_state.get("unit_of_measurement")
+            or history_state.get("uom")
+            or history_state.get("attributes", {}).get("unit_of_measurement")
+        )
         entity_id = history_state.get("entity_id", "history")
         return _normalize_pressure_value(float(state_value), unit, entity_id)
 

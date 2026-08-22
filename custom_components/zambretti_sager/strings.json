@@ -22,6 +22,28 @@
           "use_sea_level_correction": "Enable if using an absolute pressure sensor and located above sea level",
           "location": "Click on the map to select your weather station location for altitude calculation"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Weather Station",
+        "description": "Update the sensors for your forecasting model.",
+        "data": {
+          "pressure_sensor": "Pressure Sensor",
+          "wind_sensor": "Wind Direction Sensor (optional)",
+          "wind_speed_sensor": "Wind Speed Sensor (optional)",
+          "temperature_sensor": "Temperature Sensor (optional)",
+          "humidity_sensor": "Humidity Sensor (optional)",
+          "use_sea_level_correction": "Enable Sea Level Pressure Correction",
+          "location": "Location"
+        },
+        "data_description": {
+          "pressure_sensor": "Select your barometric pressure sensor (absolute or sea level pressure)",
+          "wind_sensor": "Optional: select your wind direction sensor (in degrees)",
+          "wind_speed_sensor": "Optional: dedicated wind speed sensor",
+          "temperature_sensor": "Optional: used for accurate sea level pressure correction",
+          "humidity_sensor": "Optional: improves precipitation probability accuracy",
+          "use_sea_level_correction": "Enable if using an absolute pressure sensor and located above sea level",
+          "location": "Click on the map to select your weather station location for altitude calculation"
+        }
       }
     },
     "error": {
@@ -29,7 +51,8 @@
       "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "This weather station is already configured"
+      "already_configured": "This weather station is already configured",
+      "reconfigure_successful": "Weather station reconfigured successfully"
     }
   },
   "options": {
@@ -60,6 +83,66 @@
   },
   "entity": {
     "sensor": {
+      "zambretti_forecast": {
+        "name": "Zambretti Forecast",
+        "state": {
+          "settled_fine": "Settled Fine",
+          "fine_weather": "Fine Weather",
+          "fine_becoming_less_settled": "Fine, Becoming Less Settled",
+          "fairly_fine_showery_later": "Fairly Fine, Showery Later",
+          "showery_becoming_more_unsettled": "Showery, Becoming More Unsettled",
+          "unsettled_rain_later": "Unsettled, Rain Later",
+          "rain_at_times_worse_later": "Rain at Times, Worse Later",
+          "rain_at_times_becoming_very_unsettled": "Rain at Times, Becoming Very Unsettled",
+          "very_unsettled_rain": "Very Unsettled, Rain",
+          "fine_possibly_showers": "Fine, Possibly Showers",
+          "fairly_fine_showers_likely": "Fairly Fine, Showers Likely",
+          "showery_bright_intervals": "Showery, Bright Intervals",
+          "changeable_some_rain": "Changeable, Some Rain",
+          "unsettled_rain_at_times": "Unsettled, Rain at Times",
+          "rain_at_frequent_intervals": "Rain at Frequent Intervals",
+          "stormy_much_rain": "Stormy, Much Rain",
+          "becoming_fine": "Becoming Fine",
+          "fairly_fine_improving": "Fairly Fine, Improving",
+          "fairly_fine_possibly_showers_early": "Fairly Fine, Possibly Showers Early",
+          "showery_early_improving": "Showery Early, Improving",
+          "changeable_mending": "Changeable, Mending",
+          "rather_unsettled_clearing_later": "Rather Unsettled, Clearing Later",
+          "unsettled_probably_improving": "Unsettled, Probably Improving",
+          "unsettled_short_fine_intervals": "Unsettled, Short Fine Intervals",
+          "very_unsettled_finer_at_times": "Very Unsettled, Finer at Times",
+          "stormy_possibly_improving": "Stormy, Possibly Improving",
+          "stable": "Stable"
+        }
+      },
+      "sager_forecast": {
+        "name": "Sager Forecast",
+        "state": {
+          "sager_fair_improving": "Fair, improving",
+          "sager_fair_tending_to_deteriorate": "Fair now, tending to deteriorate",
+          "sager_fair_no_change": "Fair, no important change",
+          "sager_unsettled_rain_likely": "Unsettled, rain likely",
+          "sager_unsettled_probably_improving": "Unsettled, probably improving",
+          "sager_unsettled_rain_at_times": "Unsettled, rain at times",
+          "sager_changeable_becoming_fairer": "Changeable, becoming fairer",
+          "sager_changeable_becoming_more_unsettled": "Changeable, becoming more unsettled",
+          "sager_variable_slowly_improving": "Variable, slowly improving",
+          "sager_variable_slowly_deteriorating": "Variable, slowly deteriorating",
+          "sager_variable_some_change": "Variable, some change expected"
+        }
+      },
+      "zambretti_forecast_6h": {
+        "name": "Zambretti Forecast 6h"
+      },
+      "zambretti_forecast_12h": {
+        "name": "Zambretti Forecast 12h"
+      },
+      "zambretti_forecast_24h": {
+        "name": "Zambretti Forecast 24h"
+      },
+      "precipitation_probability": {
+        "name": "Precipitation Probability"
+      },
       "last_update": {
         "name": "Last Update"
       }
