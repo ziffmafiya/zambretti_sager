@@ -38,31 +38,29 @@ async def _ws_get_version(
 
 # ── async_setup ───────────────────────────────────────────────────────────
 
+async def _async_setup_frontend(hass: HomeAssistant) -> None:
+    """Register the custom Lovelace card resource and static path."""
+    try:
+        registrar = JSModuleRegistration(hass)
+        await registrar.async_register()
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.error(
+            "Failed to register Zambretti card resource: %s. "
+            "Add manually: Settings → Dashboards → Resources → "
+            "%s/zambretti-weather-card.js (JavaScript module)",
+            err,
+            URL_BASE,
+        )
+
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Zambretti & Sager domain.
 
     Called once when Home Assistant loads the integration.
     Registers the WebSocket version command and the Lovelace JavaScript card.
-    Must be in async_setup (not async_setup_entry) so the card is available
-    before any config entry is created.
     """
     websocket_api.async_register_command(hass, _ws_get_version)
-
-    async def _setup_frontend(_event=None) -> None:
-        """Register the custom Lovelace card resource."""
-        try:
-            registrar = JSModuleRegistration(hass)
-            await registrar.async_register()
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.error(
-                "Failed to register Zambretti card resource: %s. "
-                "Add manually: Settings → Dashboards → Resources → "
-                "%s/zambretti-weather-card.js (JavaScript module)",
-                err,
-                "/zambretti_sager_card",
-            )
-
-    async_at_start(hass, _setup_frontend)
+    await _async_setup_frontend(hass)
     return True
 
 
@@ -71,6 +69,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ZambrettiConfigEntry) -> bool:
     """Set up Zambretti & Sager from a config entry (via UI)."""
     _LOGGER.info("Initializing Zambretti & Sager for: %s", entry.title)
+
+    # Ensure frontend static path and resource are registered
+    await _async_setup_frontend(hass)
 
     coordinator = await async_create_coordinator(hass, entry)
     entry.runtime_data = coordinator

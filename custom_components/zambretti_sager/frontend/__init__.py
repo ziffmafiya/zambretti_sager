@@ -128,26 +128,32 @@ class JSModuleRegistration:
 
         for module in JSMODULES:
             url = f"{URL_BASE}/{module['filename']}"
-            registered = False
+            expected_url = f"{url}?v={module['version']}"
+            matching = [
+                r for r in existing
+                if self._get_path(r["url"]) == url
+            ]
 
-            for resource in existing:
-                if self._get_path(resource["url"]) == url:
-                    registered = True
-                    if self._get_version(resource["url"]) != module["version"]:
-                        _LOGGER.info("Updating %s to v%s", module["name"], module["version"])
-                        await self.lovelace.resources.async_update_item(
-                            resource["id"],
-                            {"res_type": "module", "url": f"{url}?v={module['version']}"},
-                        )
-                    else:
-                        _LOGGER.debug("%s already up to date (v%s)", module["name"], module["version"])
-                    break
-
-            if not registered:
+            if not matching:
                 _LOGGER.info("Registering %s v%s", module["name"], module["version"])
                 await self.lovelace.resources.async_create_item(
-                    {"res_type": "module", "url": f"{url}?v={module['version']}"}
+                    {"res_type": "module", "url": expected_url}
                 )
+            else:
+                primary = matching[0]
+                if primary["url"] != expected_url:
+                    _LOGGER.info("Updating %s to v%s", module["name"], module["version"])
+                    await self.lovelace.resources.async_update_item(
+                        primary["id"],
+                        {"res_type": "module", "url": expected_url},
+                    )
+                else:
+                    _LOGGER.debug("%s already up to date (v%s)", module["name"], module["version"])
+
+                # Remove any duplicate Lovelace resource entries
+                for dup in matching[1:]:
+                    _LOGGER.info("Removing duplicate Lovelace resource: %s", dup["url"])
+                    await self.lovelace.resources.async_delete_item(dup["id"])
 
     def _get_path(self, url: str) -> str:
         return url.split("?")[0]

@@ -32,6 +32,129 @@ PRECIP = {
     "tr": "Yağış",
 }
 
+VINTAGE = {
+    "en": {
+        "storm": "STORMY", "rain": "RAIN", "change": "CHANGE", "fair": "FAIR", "very_dry": "VERY DRY",
+        "falling": "FALLING", "steady": "STEADY", "rising": "RISING", "delta_3h": "Δ 3 HOURS",
+        "aneroid": "ANEROID BAROMETER", "compensated": "Compensated for Temperature",
+        "current": "Current", "history_3h": "3h ago", "trend": "Trend"
+    },
+    "ru": {
+        "storm": "ШТОРМ", "rain": "ДОЖДЬ", "change": "ПЕРЕМЕННО", "fair": "ЯСНО", "very_dry": "СУШЬ",
+        "falling": "ПАДЕНИЕ", "steady": "СТОЙКО", "rising": "РОСТ", "delta_3h": "Δ 3 ЧАСА",
+        "aneroid": "БАРОМЕТР-АНЕРОИД", "compensated": "Температурная компенсация",
+        "current": "Текущее", "history_3h": "3 ч назад", "trend": "Тренд"
+    },
+    "de": {
+        "storm": "STURM", "rain": "REGEN", "change": "VERÄNDERLICH", "fair": "SCHÖN", "very_dry": "BESTÄNDIG",
+        "falling": "FALLEND", "steady": "BESTÄNDIG", "rising": "STEIGEND", "delta_3h": "Δ 3 STD",
+        "aneroid": "ANEROID-BAROMETER", "compensated": "Temperaturkompensiert",
+        "current": "Aktuell", "history_3h": "Vor 3 Std", "trend": "Trend"
+    },
+    "es": {
+        "storm": "TEMPESTAD", "rain": "LLUVIA", "change": "VARIABLE", "fair": "BUEN TIEMPO", "very_dry": "MUY SECO",
+        "falling": "BAJANDO", "steady": "ESTABLE", "rising": "SUBIENDO", "delta_3h": "Δ 3 HORAS",
+        "aneroid": "BARÓMETRO ANEROIDE", "compensated": "Compensado por Temperatura",
+        "current": "Actual", "history_3h": "Hace 3h", "trend": "Tendencia"
+    },
+    "fr": {
+        "storm": "TEMPÊTE", "rain": "PLUIE", "change": "VARIABLE", "fair": "BEAU TEMPS", "very_dry": "TRÈS SEC",
+        "falling": "BAISSE", "steady": "STABLE", "rising": "HAUSSE", "delta_3h": "Δ 3 HEURES",
+        "aneroid": "BAROMÈTRE ANÉROÏDE", "compensated": "Compensé en Température",
+        "current": "Actuel", "history_3h": "Il y a 3h", "trend": "Tendance"
+    },
+    "it": {
+        "storm": "TEMPESTA", "rain": "PIOGGIA", "change": "VARIABILE", "fair": "BEL TEMPO", "very_dry": "MOLTO SECCO",
+        "falling": "CALO", "steady": "STABILE", "rising": "SALITA", "delta_3h": "Δ 3 ORE",
+        "aneroid": "BAROMETRO ANEROIDE", "compensated": "Compensato in Temperatura",
+        "current": "Attuale", "history_3h": "3 ore fa", "trend": "Tendenza"
+    },
+    "pl": {
+        "storm": "BURZA", "rain": "DESZCZ", "change": "ZMIENNIE", "fair": "POGODNIE", "very_dry": "BARDZO SUCHO",
+        "falling": "SPADEK", "steady": "STABILNIE", "rising": "WZROST", "delta_3h": "Δ 3 GODZ",
+        "aneroid": "BAROMETR ANEROID", "compensated": "Kompensacja Temperatury",
+        "current": "Bieżące", "history_3h": "3h temu", "trend": "Trend"
+    },
+    "pt": {
+        "storm": "TEMPESTADE", "rain": "CHUVA", "change": "VARIÁVEL", "fair": "BOM TEMPO", "very_dry": "MUITO SECO",
+        "falling": "QUEDA", "steady": "ESTÁVEL", "rising": "ALTA", "delta_3h": "Δ 3 HORAS",
+        "aneroid": "BARÓMETRO ANEROIDE", "compensated": "Compensado por Temperatura",
+        "current": "Atual", "history_3h": "Há 3h", "trend": "Tendência"
+    },
+    "uk": {
+        "storm": "ШТОРМ", "rain": "ДОЩ", "change": "МІНЛИВО", "fair": "ЯСНО", "very_dry": "СУША",
+        "falling": "ПАДІННЯ", "steady": "СТІЙКО", "rising": "ЗРОСТАННЯ", "delta_3h": "Δ 3 ГОД",
+        "aneroid": "БАРОМЕТР-АНЕРОЇД", "compensated": "Температурна компенсація",
+        "current": "Поточний", "history_3h": "3 год тому", "trend": "Тренд"
+    },
+    "zh-Hans": {
+        "storm": "暴风雨", "rain": "降雨", "change": "多变", "fair": "晴朗", "very_dry": "干燥",
+        "falling": "下降", "steady": "稳定", "rising": "上升", "delta_3h": "Δ 3小时",
+        "aneroid": "无液气压表", "compensated": "温度补偿型",
+        "current": "当前", "history_3h": "3小时前", "trend": "趋势"
+    },
+    "zh-Hant": {
+        "storm": "暴風雨", "rain": "降雨", "change": "多變", "fair": "晴朗", "very_dry": "乾燥",
+        "falling": "下降", "steady": "穩定", "rising": "上升", "delta_3h": "Δ 3小時",
+        "aneroid": "無液氣壓表", "compensated": "溫度補償型",
+        "current": "當前", "history_3h": "3小時前", "trend": "趨勢"
+    },
+    "ja": {
+        "storm": "嵐", "rain": "雨", "change": "変化", "fair": "好天", "very_dry": "乾燥",
+        "falling": "低下", "steady": "安定", "rising": "上昇", "delta_3h": "Δ 3時間",
+        "aneroid": "アネロイド気圧計", "compensated": "温度補正済",
+        "current": "現在", "history_3h": "3時間前", "trend": "傾向"
+    },
+    "ko": {
+        "storm": "폭풍", "rain": "비", "change": "변덕", "fair": "맑음", "very_dry": "건조",
+        "falling": "하강", "steady": "안정", "rising": "상승", "delta_3h": "Δ 3시간",
+        "aneroid": "아네로이드 기압계", "compensated": "온도 보정됨",
+        "current": "현재", "history_3h": "3시간 전", "trend": "추세"
+    },
+    "cs": {
+        "storm": "BOUŘE", "rain": "DÉŠŤ", "change": "PROMĚNLIVO", "fair": "PĚKNĚ", "very_dry": "VELMI SUCHO",
+        "falling": "POKLES", "steady": "USTÁLENO", "rising": "VZESTUP", "delta_3h": "Δ 3 HOD",
+        "aneroid": "ANEROIDNÍ BAROMETR", "compensated": "Teplotně kompenzováno",
+        "current": "Nyní", "history_3h": "Před 3h", "trend": "Trend"
+    },
+    "sv": {
+        "storm": "STORM", "rain": "REGN", "change": "OMBYTLIGT", "fair": "VACKERT", "very_dry": "MYCKET TORRT",
+        "falling": "FALLANDE", "steady": "STADIGT", "rising": "STIGANDE", "delta_3h": "Δ 3 TIM",
+        "aneroid": "ANEROIDBAROMETER", "compensated": "Temperaturkompenserad",
+        "current": "Nu", "history_3h": "3 tim sedan", "trend": "Trend"
+    },
+    "da": {
+        "storm": "STORM", "rain": "REGN", "change": "FORANDERLIGT", "fair": "SMUKT", "very_dry": "MEGET TØRT",
+        "falling": "FALDENDE", "steady": "STABILT", "rising": "STIGENDE", "delta_3h": "Δ 3 TIMER",
+        "aneroid": "ANEROIDBAROMETER", "compensated": "Temperaturkompenseret",
+        "current": "Nu", "history_3h": "3t siden", "trend": "Trend"
+    },
+    "nb": {
+        "storm": "STORM", "rain": "REGN", "change": "SKIFTENDE", "fair": "PENT", "very_dry": "SVÆRT TØRT",
+        "falling": "FALLENDE", "steady": "STABILT", "rising": "STIGENDE", "delta_3h": "Δ 3 TIMER",
+        "aneroid": "ANEROIDBAROMETER", "compensated": "Temperaturkompensert",
+        "current": "Nå", "history_3h": "3t siden", "trend": "Trend"
+    },
+    "nl": {
+        "storm": "STORM", "rain": "REGEN", "change": "VERANDERLIJK", "fair": "MOOI", "very_dry": "ZEER DROOG",
+        "falling": "DALEND", "steady": "STABIEL", "rising": "STIJGEND", "delta_3h": "Δ 3 UUR",
+        "aneroid": "ANEROÏDE BAROMETER", "compensated": "Temperatuurgecompenseerd",
+        "current": "Nu", "history_3h": "3u geleden", "trend": "Trend"
+    },
+    "hu": {
+        "storm": "VIHAR", "rain": "ESŐ", "change": "VÁLTOZÉKONY", "fair": "SZÉP IDŐ", "very_dry": "NAGYON SZÁRAZ",
+        "falling": "SÜLLYED", "steady": "ÁLLANDÓ", "rising": "EMELKEDIK", "delta_3h": "Δ 3 ÓRA",
+        "aneroid": "ANEROID BAROMÉTER", "compensated": "Hőmérséklet-kompenzált",
+        "current": "Jelenlegi", "history_3h": "3 órája", "trend": "Trend"
+    },
+    "tr": {
+        "storm": "FIRTINA", "rain": "YAĞMUR", "change": "DEĞİŞKEN", "fair": "AÇIK", "very_dry": "ÇOK KURU",
+        "falling": "DÜŞÜŞ", "steady": "SABİT", "rising": "YÜKSELİŞ", "delta_3h": "Δ 3 SAAT",
+        "aneroid": "ANEROİT BAROMETRE", "compensated": "Sıcaklık Dengelemeli",
+        "current": "Şimdiki", "history_3h": "3s önce", "trend": "Trend"
+    },
+}
+
 LANG_OPTIONS = [
     ("auto", "langAuto"),
     ("en", "English"),
@@ -60,6 +183,13 @@ EDITOR_EN = {
     "appearance": "Appearance",
     "language": "Language",
     "langAuto": "Auto (from Home Assistant)",
+    "cardStyle": "Card Style",
+    "styleModern": "Modern iOS Style",
+    "styleVintage": "Vintage Nautical Barometer",
+    "styleTile": "Compact Tile (Mushroom style)",
+    "vintageUnits": "Dial scale unit",
+    "showSubdial": "Show 3h trend sub-dial",
+    "showSubdialH": "Auxiliary sub-dial with 3-hour pressure change indicator",
     "showWind": "Show wind",
     "showWindH": "Wind direction and speed in the footer",
     "windEntity": "Wind speed sensor",
@@ -73,8 +203,14 @@ EDITOR_EN = {
     "showForecastH": "Bottom row with forecast icons",
     "autoTheme": "Auto theme by condition",
     "autoThemeH": "Background color follows current weather condition",
+    "themeAlpha": "Background opacity (Alpha)",
+    "themeAlphaH": "Adjust the transparency of the auto theme background (0–100%)",
     "customBg": "Custom card background",
     "customBgH": "CSS gradient or color, e.g. #1a1a2e or linear-gradient(...)",
+    "showTrend": "Show forecast trend timeline",
+    "showTrendH": "Horizontal strip of past Zambretti states with icons and times",
+    "showHistory": "Show 24h history chart",
+    "showHistoryH": "Pressure & precipitation chart for the last 24 hours",
 }
 
 EDITOR_RU = {
@@ -82,6 +218,13 @@ EDITOR_RU = {
     "appearance": "Внешний вид",
     "language": "Язык",
     "langAuto": "Авто (из Home Assistant)",
+    "cardStyle": "Стиль карточки",
+    "styleModern": "Современный стиль (iOS)",
+    "styleVintage": "Винтажный морской барометр",
+    "styleTile": "Компактная плитка (Tile / Mushroom)",
+    "vintageUnits": "Единицы шкалы циферблата",
+    "showSubdial": "Показывать мини-индикатор тренда",
+    "showSubdialH": "Вспомогательный циферблат с дельтой давления за 3 часа",
     "showWind": "Показывать ветер",
     "showWindH": "Направление и скорость ветра в нижней полоске",
     "windEntity": "Датчик скорости ветра",
@@ -95,8 +238,14 @@ EDITOR_RU = {
     "showForecastH": "Нижний ряд с иконками",
     "autoTheme": "Авто-тема по погоде",
     "autoThemeH": "Цвет фона меняется по текущему условию",
+    "themeAlpha": "Прозрачность фона (Alpha)",
+    "themeAlphaH": "Регулировка прозрачности градиента авто-темы (0–100%)",
     "customBg": "Свой фон карточки",
     "customBgH": "CSS-градиент или цвет, напр. #1a1a2e или linear-gradient(...)",
+    "showTrend": "Показывать историю изменений",
+    "showTrendH": "Горизонтальная лента предыдущих прогнозов Zambretti",
+    "showHistory": "Показывать 24ч график",
+    "showHistoryH": "График давления и осадков за последние 24 часа",
 }
 
 EDITOR_FR = {
@@ -104,6 +253,7 @@ EDITOR_FR = {
     "appearance": "Apparence",
     "language": "Langue",
     "langAuto": "Auto (depuis Home Assistant)",
+    "styleTile": "Tuile compacte (style Mushroom)",
     "showWind": "Afficher le vent",
     "showWindH": "Direction et vitesse du vent dans le bandeau inférieur",
     "windEntity": "Capteur de vitesse du vent",
@@ -121,15 +271,48 @@ EDITOR_FR = {
     "customBgH": "Dégradé CSS ou couleur, ex. #1a1a2e ou linear-gradient(...)",
 }
 
-EDITOR_DE = {**EDITOR_EN, "appearance": "Darstellung", "language": "Sprache", "langAuto": "Auto (von Home Assistant)", "showWind": "Wind anzeigen", "showWindH": "Windrichtung und -geschwindigkeit in der Fußzeile", "windEntity": "Windgeschwindigkeitssensor", "windEntityH": "Optional — sonst Attribut des Haupt-Sensors", "windUnit": "Windeinheit", "showSager": "Sager-Prognose anzeigen", "showPrecip": "Niederschlagsanzeige", "showForecasts": "Prognosen 6h / 12h / 24h anzeigen", "autoTheme": "Auto-Thema nach Wetter"}
-EDITOR_ES = {**EDITOR_EN, "appearance": "Apariencia", "language": "Idioma", "langAuto": "Auto (desde Home Assistant)", "showWind": "Mostrar viento", "windEntity": "Sensor de velocidad del viento", "windUnit": "Unidad de viento", "showSager": "Mostrar pronóstico Sager", "showPrecip": "Mostrar precipitación", "showForecasts": "Mostrar pronósticos 6h / 12h / 24h", "autoTheme": "Tema automático según el tiempo"}
-EDITOR_IT = {**EDITOR_EN, "appearance": "Aspetto", "language": "Lingua", "langAuto": "Auto (da Home Assistant)", "showWind": "Mostra vento", "windEntity": "Sensore velocità vento", "windUnit": "Unità vento", "showSager": "Mostra previsione Sager", "showPrecip": "Mostra precipitazioni", "showForecasts": "Mostra previsioni 6h / 12h / 24h", "autoTheme": "Tema automatico per condizione"}
-EDITOR_PL = {**EDITOR_EN, "appearance": "Wygląd", "language": "Język", "langAuto": "Auto (z Home Assistant)", "showWind": "Pokaż wiatr", "windEntity": "Czujnik prędkości wiatru", "windUnit": "Jednostka wiatru", "showSager": "Pokaż prognozę Sager", "showPrecip": "Pokaż opady", "showForecasts": "Pokaż prognozy 6h / 12h / 24h", "autoTheme": "Motyw auto wg pogody"}
-EDITOR_UK = {**EDITOR_RU, "appearance": "Зовнішній вигляд", "language": "Мова", "langAuto": "Авто (з Home Assistant)"}
-EDITOR_ZH_HANS = {**EDITOR_EN, "appearance": "外观", "language": "语言", "langAuto": "自动（跟随 Home Assistant）", "showWind": "显示风速", "windEntity": "风速传感器", "windUnit": "风速单位", "showSager": "显示 Sager 预报", "showPrecip": "显示降水", "showForecasts": "显示 6/12/24 小时预报", "autoTheme": "按天气自动主题"}
-EDITOR_ZH_HANT = {**EDITOR_ZH_HANS, "appearance": "外觀", "language": "語言", "langAuto": "自動（跟隨 Home Assistant）", "showWind": "顯示風速", "windEntity": "風速感測器", "windUnit": "風速單位", "showSager": "顯示 Sager 預報", "showPrecip": "顯示降水", "showForecasts": "顯示 6/12/24 小時預報", "autoTheme": "依天氣自動主題"}
-EDITOR_JA = {**EDITOR_EN, "appearance": "外観", "language": "言語", "langAuto": "自動（Home Assistant から）", "showWind": "風を表示", "windEntity": "風速センサー", "windUnit": "風速単位", "showSager": "Sager 予報を表示", "showPrecip": "降水を表示", "showForecasts": "6/12/24時間予報を表示", "autoTheme": "天候に応じた自動テーマ"}
-EDITOR_KO = {**EDITOR_EN, "appearance": "모양", "language": "언어", "langAuto": "자동 (Home Assistant)", "showWind": "바람 표시", "windEntity": "풍속 센서", "windUnit": "풍속 단위", "showSager": "Sager 예보 표시", "showPrecip": "강수 표시", "showForecasts": "6/12/24시간 예보 표시", "autoTheme": "날씨별 자동 테마"}
+EDITOR_DE = {**EDITOR_EN, "appearance": "Darstellung", "language": "Sprache", "langAuto": "Auto (von Home Assistant)", "styleTile": "Kompakte Kachel (Mushroom-Stil)", "showWind": "Wind anzeigen", "showWindH": "Windrichtung und -geschwindigkeit in der Fußzeile", "windEntity": "Windgeschwindigkeitssensor", "windEntityH": "Optional — sonst Attribut des Haupt-Sensors", "windUnit": "Windeinheit", "showSager": "Sager-Prognose anzeigen", "showPrecip": "Niederschlagsanzeige", "showForecasts": "Prognosen 6h / 12h / 24h anzeigen", "autoTheme": "Auto-Thema nach Wetter"}
+EDITOR_ES = {**EDITOR_EN, "appearance": "Apariencia", "language": "Idioma", "langAuto": "Auto (desde Home Assistant)", "styleTile": "Tarjeta compacta (estilo Mushroom)", "showWind": "Mostrar viento", "windEntity": "Sensor de velocidad del viento", "windUnit": "Unidad de viento", "showSager": "Mostrar pronóstico Sager", "showPrecip": "Mostrar precipitación", "showForecasts": "Mostrar pronósticos 6h / 12h / 24h", "autoTheme": "Tema automático según el tiempo"}
+EDITOR_IT = {**EDITOR_EN, "appearance": "Aspetto", "language": "Lingua", "langAuto": "Auto (da Home Assistant)", "styleTile": "Riquadro compatto (stile Mushroom)", "showWind": "Mostra vento", "windEntity": "Sensore velocità vento", "windUnit": "Unità vento", "showSager": "Mostra previsione Sager", "showPrecip": "Mostra precipitazioni", "showForecasts": "Mostra previsioni 6h / 12h / 24h", "autoTheme": "Tema automatico per condizione"}
+EDITOR_PL = {**EDITOR_EN, "appearance": "Wygląd", "language": "Język", "langAuto": "Auto (z Home Assistant)", "styleTile": "Kompaktowa płytka (styl Mushroom)", "showWind": "Pokaż wiatr", "windEntity": "Czujnik prędkości wiatru", "windUnit": "Jednostka wiatru", "showSager": "Pokaż prognozę Sager", "showPrecip": "Pokaż opady", "showForecasts": "Pokaż prognozy 6h / 12h / 24h", "autoTheme": "Motyw auto wg pogody"}
+EDITOR_UK = {
+    **EDITOR_EN,
+    "appearance": "Зовнішній вигляд",
+    "language": "Мова",
+    "langAuto": "Авто (з Home Assistant)",
+    "cardStyle": "Стиль картки",
+    "styleModern": "Сучасний стиль (iOS)",
+    "styleVintage": "Вінтажний морський барометр",
+    "styleTile": "Компактна плитка (Tile / Mushroom)",
+    "vintageUnits": "Одиниці шкали циферблата",
+    "showSubdial": "Показувати міні-індикатор тренду",
+    "showSubdialH": "Допоміжний циферблат з дельтою тиску за 3 години",
+    "showWind": "Показувати вітер",
+    "showWindH": "Напрямок та швидкість вітру в нижній смужці",
+    "windEntity": "Датчик швидкості вітру",
+    "windEntityH": "Необов'язково — якщо не вибрано, використовується атрибут основного датчика",
+    "windUnit": "Одиниці вітру",
+    "showSager": "Показувати прогноз Sager",
+    "showSagerH": "Нижня смужка з аналітикою Sager",
+    "showPrecip": "Показувати ймовірність опадів",
+    "showPrecipH": "Круговий індикатор праворуч",
+    "showForecasts": "Показувати прогнози 6г / 12г / 24г",
+    "showForecastH": "Нижній ряд з іконками",
+    "autoTheme": "Авто-тема за погодою",
+    "autoThemeH": "Колір фону змінюється відповідно до поточної погоди",
+    "themeAlpha": "Прозорість фону (Alpha)",
+    "themeAlphaH": "Регулювання прозорості градієнта авто-теми (0–100%)",
+    "customBg": "Власний фон картки",
+    "customBgH": "CSS-градієнт або колір, напр. #1a1a2e або linear-gradient(...)",
+    "showTrend": "Показувати історію змін",
+    "showTrendH": "Горизонтальна стрічка попередніх прогнозів Zambretti",
+    "showHistory": "Показувати 24г графік",
+    "showHistoryH": "Графік тиску та опадів за останні 24 години",
+}
+EDITOR_ZH_HANS = {**EDITOR_EN, "appearance": "外观", "language": "语言", "langAuto": "自动（跟随 Home Assistant）", "styleTile": "紧凑磁贴（Mushroom 风格）", "showWind": "显示风速", "windEntity": "风速传感器", "windUnit": "风速单位", "showSager": "显示 Sager 预报", "showPrecip": "显示降水", "showForecasts": "显示 6/12/24 小时预报", "autoTheme": "按天气自动主题"}
+EDITOR_ZH_HANT = {**EDITOR_ZH_HANS, "appearance": "外觀", "language": "語言", "langAuto": "自動（跟隨 Home Assistant）", "styleTile": "緊湊磁貼（Mushroom 風格）", "showWind": "顯示風速", "windEntity": "風速感測器", "windUnit": "風速單位", "showSager": "顯示 Sager 預報", "showPrecip": "顯示降水", "showForecasts": "顯示 6/12/24 小時預報", "autoTheme": "依天氣自動主題"}
+EDITOR_JA = {**EDITOR_EN, "appearance": "外観", "language": "言語", "langAuto": "自動（Home Assistant から）", "styleTile": "コンパクトタイル（Mushroom風）", "showWind": "風を表示", "windEntity": "風速センサー", "windUnit": "風速単位", "showSager": "Sager 予報を表示", "showPrecip": "降水を表示", "showForecasts": "6/12/24時間予報を表示", "autoTheme": "天候に応じた自動テーマ"}
+EDITOR_KO = {**EDITOR_EN, "appearance": "모양", "language": "언어", "langAuto": "자동 (Home Assistant)", "styleTile": "컴팩트 타일 (Mushroom 스타일)", "showWind": "바람 표시", "windEntity": "풍속 센서", "windUnit": "풍속 단위", "showSager": "Sager 예보 표시", "showPrecip": "강수 표시", "showForecasts": "6/12/24시간 예보 표시", "autoTheme": "날씨별 자동 테마"}
 
 EDITOR_MAP = {
     "en": EDITOR_EN,
@@ -224,6 +407,8 @@ def main() -> None:
         "",
         f"export const PRECIP_LABELS = {js_obj(PRECIP)};",
         "",
+        f"export const VINTAGE_LABELS = {js_labels_map(VINTAGE)};",
+        "",
         f"export const EDITOR_STRINGS = {js_obj(EDITOR_MAP)};",
         "",
         f"export const LANG_OPTIONS = {json.dumps(LANG_OPTIONS, ensure_ascii=False, indent=2)};",
@@ -248,6 +433,11 @@ def main() -> None:
         "export function getPrecipLabel(configLang, hassLang) {",
         "  const code = configLang === 'auto' ? resolveLang(hassLang || 'en') : resolveLang(configLang);",
         "  return PRECIP_LABELS[code] || PRECIP_LABELS.en;",
+        "}",
+        "",
+        "export function getVintageLabels(configLang, hassLang) {",
+        "  const code = configLang === 'auto' ? resolveLang(hassLang || 'en') : resolveLang(configLang);",
+        "  return VINTAGE_LABELS[code] || VINTAGE_LABELS.en;",
         "}",
         "",
         "export function getEditorStrings(configLang, hassLang) {",

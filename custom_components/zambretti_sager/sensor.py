@@ -68,6 +68,7 @@ class WeatherSensorBase(CoordinatorEntity[ZambrettiSagerCoordinator], SensorEnti
             return {}
         attrs: dict = {
             "pressure_hpa": d.p_now,
+            "pressure_3h_ago": d.p_3h,
             "pressure_delta_3h": d.delta_3h,
             "trend": d.trend_label,
         }

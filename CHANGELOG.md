@@ -1,5 +1,86 @@
 # Changelog
 
+## [1.9.88] — 2026-08-30
+
+### Fixed
+- **Instant Frontend Static Path & Resource Registration** — Direct initialization of the Lovelace frontend static endpoint and resource registration in both `async_setup` and `async_setup_entry`, eliminating the `async_at_start` startup dependency and preventing 404 errors during dynamic reloads.
+
+---
+
+## [1.9.87] — 2026-08-30
+
+### Improved
+- **Vintage Barometer Readout Plaque & Dial Legibility** — Styled readout boxes as engraved brass maritime plaques with embossed golden lettering; applied deep dark mahogany radial backdrop by default; increased dial scale number contrast and enlarged weather arc titles for crisp legibility.
+
+---
+
+## [1.9.86] — 2026-08-30
+
+### Improved
+- **Tile Mode Readability & Contrast Redesign** — Added an ultra-readable glassmorphic dark-tinted backdrop with `backdrop-filter: blur(18px)` over auto-theme gradients; squircle icon badge; high-contrast dark glass trend capsule with pulsing indicator dot; and dedicated high-contrast chips for precipitation, wind, and pressure.
+
+---
+
+## [1.9.85] — 2026-08-30
+
+### Fixed
+- **Card Style Dropdown Option** — Restored the missing `"tile"` option (`"Компактна плитка (Tile / Mushroom)"`) inside `<select id="sel-card-style">` in the visual card editor.
+
+---
+
+## [1.9.84] — 2026-08-30
+
+### Fixed
+- **Self-Contained Card Bundle & UI Card Picker Registration** — Bundled all localization and widget logic into a single self-contained JS file without external import dependencies; guarded `customElements.define` against duplicate registrations; placed `window.customCards` at top level for instant detection in Lovelace "Add Card" search.
+
+---
+
+## [1.9.83] — 2026-08-30
+
+### Fixed
+- **Ukrainian Localization in Card Editor** — Provided complete native Ukrainian translations (`uk`) for all visual editor fields, labels, hints, and style selectors (replacing fallback inheritance from Russian).
+- **Lovelace Duplicate Resource Auto-Cleanup** — Integration startup now cleans up any stale or unversioned duplicate Lovelace resource entries automatically to ensure instant browser cache invalidation.
+
+---
+
+## [1.9.82] — 2026-08-30
+
+### Added
+- **Tile / Mushroom Compact View Mode (`card_style: tile`)** — Minimalist 1×1 and 2×1 card layout optimized for mobile screens, Mushroom dashboards, and Apple Home style grid views with animated weather icon, Zambretti forecast title, trend delta pill (`↑ +1.4 hPa`), precip indicator, and pressure readout.
+- **Interactive 24h History Chart Scrubbing** — Dynamic touch and mouse scrubbing on the 24-hour pressure/precipitation chart with glowing tracker dot, vertical guide line, floating tooltip, and live status bar showing past timestamp, pressure, and rain probability.
+- **Visual Editor Options** — Added Tile mode selection to the card style dropdown in all 20 supported languages.
+
+---
+
+## [1.9.81] — 2026-08-30
+
+### Fixed
+- **Frontend i18n relative import cache busting** — Added version query parameter `?v=1.9.81` to relative import of `./zambretti-card-i18n.js` to ensure browsers never load a stale cached dictionary without `getVintageLabels`.
+
+---
+
+## [1.9.80] — 2026-08-30
+
+### Fixed
+- **Vintage mode rendering fix** — Fixed a `ReferenceError` during card rendering in vintage mode by removing redundant inline style variable reference, resolving `Custom element doesn't exist` in Lovelace.
+
+---
+
+## [1.9.79] — 2026-08-30
+
+### Added
+- **Vintage Steampunk / Brass Barometer Dial Mode** — Added a dedicated vintage nautical aneroid barometer view mode to the Lovelace card (`card_style: vintage`):
+  - Ornate blued-steel moving needle indicating current sea-level pressure.
+  - Gold/brass knurled reference needle indicating 3-hour historical pressure.
+  - Sub-dial trend indicator needle showing pressure delta ($\Delta P_{3\text{h}}$) with falling/steady/rising sectors.
+  - Authentic Victorian meteorological zones (*Stormy / Rain / Change / Fair / Very Dry*) and dual scale (*hPa* & *mmHg*).
+  - Smooth elastic needle physics using CSS transitions.
+  - Full localization of vintage dial terminology across 20 languages in `zambretti-card-i18n.js`.
+  - Visual editor options for selecting card style (*Modern iOS* vs *Vintage Barometer*) and toggling the trend sub-dial.
+- **Sensor Attribute `pressure_3h_ago`** — Exposed `pressure_3h_ago` in `WeatherSensorBase._base_attrs` for instant reference point retrieval without database history lag.
+
+---
+
 ## [1.9.78] — 2026-08-22
 
 ### Fixed

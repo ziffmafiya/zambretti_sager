@@ -68,6 +68,7 @@ def test_zambretti_sensor(mock_coordinator):
     attrs = sensor.extra_state_attributes
     assert attrs["pressure_sensor"] == "sensor.barometer"
     assert attrs["pressure_hpa"] == 1016.4
+    assert attrs["pressure_3h_ago"] == 1014.2
     assert attrs["trend"] == "↑ Rising"
     assert attrs["wind_direction"] == "W"
 
