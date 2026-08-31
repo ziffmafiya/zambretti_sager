@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from custom_components.zambretti_sager.const import (
     ZAMBRETTI_MAPPING,
     calculate_precipitation_probability,

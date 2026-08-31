@@ -2,25 +2,30 @@
 
 from __future__ import annotations
 
-import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
+import voluptuous as vol
 
 from .const import (
-    DOMAIN,
+    CONF_HUMIDITY_SENSOR,
+    CONF_LATITUDE,
+    CONF_LONGITUDE,
     CONF_PRESSURE_SENSOR,
+    CONF_TEMPERATURE_SENSOR,
+    CONF_USE_SEA_LEVEL,
+    CONF_WIND_SENSOR,
+    CONF_WIND_SPEED_SENSOR,
+    DOMAIN,
+)
+
+CONF_LOCATION = "location"
+OPTIONAL_ENTITY_KEYS = (
     CONF_WIND_SENSOR,
     CONF_WIND_SPEED_SENSOR,
     CONF_TEMPERATURE_SENSOR,
     CONF_HUMIDITY_SENSOR,
-    CONF_LATITUDE,
-    CONF_LONGITUDE,
-    CONF_USE_SEA_LEVEL,
 )
-
-CONF_LOCATION = "location"
-OPTIONAL_ENTITY_KEYS = (CONF_WIND_SENSOR, CONF_WIND_SPEED_SENSOR, CONF_TEMPERATURE_SENSOR, CONF_HUMIDITY_SENSOR)
 
 PRESSURE_SENSOR_SELECTOR = selector.EntitySelector(
     selector.EntitySelectorConfig(
@@ -100,17 +105,21 @@ class ZambrettiSagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_PRESSURE_SENSOR): PRESSURE_SENSOR_SELECTOR,
-                vol.Optional(CONF_WIND_SENSOR): WIND_SENSOR_SELECTOR,
-                vol.Optional(CONF_WIND_SPEED_SENSOR): WIND_SPEED_SENSOR_SELECTOR,
-                vol.Optional(CONF_TEMPERATURE_SENSOR): TEMPERATURE_SENSOR_SELECTOR,
-                vol.Optional(CONF_HUMIDITY_SENSOR): HUMIDITY_SENSOR_SELECTOR,
-                vol.Optional(CONF_USE_SEA_LEVEL, default=False): selector.BooleanSelector(),
-                vol.Optional(CONF_LOCATION, default=default_location): selector.LocationSelector(
-                    selector.LocationSelectorConfig(radius=False, icon="mdi:map-marker")
-                ),
-            })
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PRESSURE_SENSOR): PRESSURE_SENSOR_SELECTOR,
+                    vol.Optional(CONF_WIND_SENSOR): WIND_SENSOR_SELECTOR,
+                    vol.Optional(CONF_WIND_SPEED_SENSOR): WIND_SPEED_SENSOR_SELECTOR,
+                    vol.Optional(CONF_TEMPERATURE_SENSOR): TEMPERATURE_SENSOR_SELECTOR,
+                    vol.Optional(CONF_HUMIDITY_SENSOR): HUMIDITY_SENSOR_SELECTOR,
+                    vol.Optional(CONF_USE_SEA_LEVEL, default=False): selector.BooleanSelector(),
+                    vol.Optional(
+                        CONF_LOCATION, default=default_location
+                    ): selector.LocationSelector(
+                        selector.LocationSelectorConfig(radius=False, icon="mdi:map-marker")
+                    ),
+                }
+            ),
         )
 
     async def async_step_reconfigure(self, user_input=None):
@@ -129,11 +138,19 @@ class ZambrettiSagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 reason="reconfigure_successful",
             )
 
-        current_pressure = entry.options.get(CONF_PRESSURE_SENSOR) or entry.data.get(CONF_PRESSURE_SENSOR)
+        current_pressure = entry.options.get(CONF_PRESSURE_SENSOR) or entry.data.get(
+            CONF_PRESSURE_SENSOR
+        )
         current_wind = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
-        current_wind_speed = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(CONF_WIND_SPEED_SENSOR)
-        current_temp = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(CONF_TEMPERATURE_SENSOR)
-        current_humidity = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(CONF_HUMIDITY_SENSOR)
+        current_wind_speed = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(
+            CONF_WIND_SPEED_SENSOR
+        )
+        current_temp = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(
+            CONF_TEMPERATURE_SENSOR
+        )
+        current_humidity = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(
+            CONF_HUMIDITY_SENSOR
+        )
         current_use_sea_level = (
             entry.options.get(CONF_USE_SEA_LEVEL)
             if CONF_USE_SEA_LEVEL in entry.options
@@ -156,23 +173,33 @@ class ZambrettiSagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schema_dict[vol.Optional(CONF_WIND_SENSOR)] = WIND_SENSOR_SELECTOR
 
         if current_wind_speed:
-            schema_dict[vol.Optional(CONF_WIND_SPEED_SENSOR, default=current_wind_speed)] = WIND_SPEED_SENSOR_SELECTOR
+            schema_dict[vol.Optional(CONF_WIND_SPEED_SENSOR, default=current_wind_speed)] = (
+                WIND_SPEED_SENSOR_SELECTOR
+            )
         else:
             schema_dict[vol.Optional(CONF_WIND_SPEED_SENSOR)] = WIND_SPEED_SENSOR_SELECTOR
 
         if current_temp:
-            schema_dict[vol.Optional(CONF_TEMPERATURE_SENSOR, default=current_temp)] = TEMPERATURE_SENSOR_SELECTOR
+            schema_dict[vol.Optional(CONF_TEMPERATURE_SENSOR, default=current_temp)] = (
+                TEMPERATURE_SENSOR_SELECTOR
+            )
         else:
             schema_dict[vol.Optional(CONF_TEMPERATURE_SENSOR)] = TEMPERATURE_SENSOR_SELECTOR
 
         if current_humidity:
-            schema_dict[vol.Optional(CONF_HUMIDITY_SENSOR, default=current_humidity)] = HUMIDITY_SENSOR_SELECTOR
+            schema_dict[vol.Optional(CONF_HUMIDITY_SENSOR, default=current_humidity)] = (
+                HUMIDITY_SENSOR_SELECTOR
+            )
         else:
             schema_dict[vol.Optional(CONF_HUMIDITY_SENSOR)] = HUMIDITY_SENSOR_SELECTOR
 
-        schema_dict[vol.Optional(CONF_USE_SEA_LEVEL, default=current_use_sea_level)] = selector.BooleanSelector()
-        schema_dict[vol.Optional(CONF_LOCATION, default=default_location)] = selector.LocationSelector(
-            selector.LocationSelectorConfig(radius=False, icon="mdi:map-marker")
+        schema_dict[vol.Optional(CONF_USE_SEA_LEVEL, default=current_use_sea_level)] = (
+            selector.BooleanSelector()
+        )
+        schema_dict[vol.Optional(CONF_LOCATION, default=default_location)] = (
+            selector.LocationSelector(
+                selector.LocationSelectorConfig(radius=False, icon="mdi:map-marker")
+            )
         )
 
         return self.async_show_form(
@@ -203,11 +230,19 @@ class ZambrettiSagerOptionsFlowHandler(config_entries.OptionsFlow):
 
         entry = self._config_entry
         # Read current values from options first, fall back to data
-        current_pressure = entry.options.get(CONF_PRESSURE_SENSOR) or entry.data.get(CONF_PRESSURE_SENSOR)
+        current_pressure = entry.options.get(CONF_PRESSURE_SENSOR) or entry.data.get(
+            CONF_PRESSURE_SENSOR
+        )
         current_wind = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
-        current_wind_speed = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(CONF_WIND_SPEED_SENSOR)
-        current_temp = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(CONF_TEMPERATURE_SENSOR)
-        current_humidity = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(CONF_HUMIDITY_SENSOR)
+        current_wind_speed = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(
+            CONF_WIND_SPEED_SENSOR
+        )
+        current_temp = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(
+            CONF_TEMPERATURE_SENSOR
+        )
+        current_humidity = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(
+            CONF_HUMIDITY_SENSOR
+        )
         current_use_sea_level = (
             entry.options.get(CONF_USE_SEA_LEVEL)
             if CONF_USE_SEA_LEVEL in entry.options
@@ -239,23 +274,33 @@ class ZambrettiSagerOptionsFlowHandler(config_entries.OptionsFlow):
             schema_dict[vol.Optional(CONF_WIND_SENSOR)] = WIND_SENSOR_SELECTOR
 
         if current_wind_speed:
-            schema_dict[vol.Optional(CONF_WIND_SPEED_SENSOR, default=current_wind_speed)] = WIND_SPEED_SENSOR_SELECTOR
+            schema_dict[vol.Optional(CONF_WIND_SPEED_SENSOR, default=current_wind_speed)] = (
+                WIND_SPEED_SENSOR_SELECTOR
+            )
         else:
             schema_dict[vol.Optional(CONF_WIND_SPEED_SENSOR)] = WIND_SPEED_SENSOR_SELECTOR
 
         if current_temp:
-            schema_dict[vol.Optional(CONF_TEMPERATURE_SENSOR, default=current_temp)] = TEMPERATURE_SENSOR_SELECTOR
+            schema_dict[vol.Optional(CONF_TEMPERATURE_SENSOR, default=current_temp)] = (
+                TEMPERATURE_SENSOR_SELECTOR
+            )
         else:
             schema_dict[vol.Optional(CONF_TEMPERATURE_SENSOR)] = TEMPERATURE_SENSOR_SELECTOR
 
         if current_humidity:
-            schema_dict[vol.Optional(CONF_HUMIDITY_SENSOR, default=current_humidity)] = HUMIDITY_SENSOR_SELECTOR
+            schema_dict[vol.Optional(CONF_HUMIDITY_SENSOR, default=current_humidity)] = (
+                HUMIDITY_SENSOR_SELECTOR
+            )
         else:
             schema_dict[vol.Optional(CONF_HUMIDITY_SENSOR)] = HUMIDITY_SENSOR_SELECTOR
 
-        schema_dict[vol.Optional(CONF_USE_SEA_LEVEL, default=current_use_sea_level)] = selector.BooleanSelector()
-        schema_dict[vol.Optional(CONF_LOCATION, default=default_location)] = selector.LocationSelector(
-            selector.LocationSelectorConfig(radius=False, icon="mdi:map-marker")
+        schema_dict[vol.Optional(CONF_USE_SEA_LEVEL, default=current_use_sea_level)] = (
+            selector.BooleanSelector()
+        )
+        schema_dict[vol.Optional(CONF_LOCATION, default=default_location)] = (
+            selector.LocationSelector(
+                selector.LocationSelectorConfig(radius=False, icon="mdi:map-marker")
+            )
         )
 
         return self.async_show_form(

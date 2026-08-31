@@ -1,4 +1,5 @@
 """JavaScript module registration for Zambretti & Sager card."""
+
 # Tested against HA 2026.x where hass.data uses LOVELACE_DATA key
 # and LovelaceData has resource_mode (not mode) attribute.
 from __future__ import annotations
@@ -21,6 +22,7 @@ _LOVELACE_DATA_KEY = "lovelace"
 # Constant introduced in HA 2025/2026 — import defensively
 try:
     from homeassistant.components.lovelace.const import LOVELACE_DATA
+
     _LOVELACE_DATA_KEY = LOVELACE_DATA
 except ImportError:
     _LOVELACE_DATA_KEY = "lovelace"
@@ -122,17 +124,13 @@ class JSModuleRegistration:
         _LOGGER.debug("Installing Zambretti javascript modules")
 
         existing = [
-            r for r in self.lovelace.resources.async_items()
-            if r["url"].startswith(URL_BASE)
+            r for r in self.lovelace.resources.async_items() if r["url"].startswith(URL_BASE)
         ]
 
         for module in JSMODULES:
             url = f"{URL_BASE}/{module['filename']}"
             expected_url = f"{url}?v={module['version']}"
-            matching = [
-                r for r in existing
-                if self._get_path(r["url"]) == url
-            ]
+            matching = [r for r in existing if self._get_path(r["url"]) == url]
 
             if not matching:
                 _LOGGER.info("Registering %s v%s", module["name"], module["version"])
@@ -171,8 +169,7 @@ class JSModuleRegistration:
         for module in JSMODULES:
             url = f"{URL_BASE}/{module['filename']}"
             to_remove = [
-                r for r in self.lovelace.resources.async_items()
-                if r["url"].startswith(url)
+                r for r in self.lovelace.resources.async_items() if r["url"].startswith(url)
             ]
             for resource in to_remove:
                 await self.lovelace.resources.async_delete_item(resource["id"])

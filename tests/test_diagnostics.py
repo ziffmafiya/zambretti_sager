@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 from unittest.mock import MagicMock
+
 import pytest
 
 from custom_components.zambretti_sager.coordinator import ForecastData
@@ -52,13 +53,14 @@ async def test_diagnostics_redaction():
         trend_label="↑ Rising",
         zambretti_state="settled_fine",
         sager_state="sager_fair_improving",
-        last_updated=datetime.datetime(2026, 8, 22, 12, 0, tzinfo=datetime.timezone.utc),
+        last_updated=datetime.datetime(2026, 8, 22, 12, 0, tzinfo=datetime.UTC),
     )
 
     entry.runtime_data = coordinator
 
     # Mock async_redact_data to simulate HA diagnostics behavior
     import custom_components.zambretti_sager.diagnostics as diag_module
+
     diag_module.async_redact_data = lambda data, to_redact: {
         k: "**REDACTED**" if k in to_redact else v for k, v in data.items()
     }

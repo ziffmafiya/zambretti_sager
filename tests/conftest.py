@@ -5,14 +5,43 @@ from __future__ import annotations
 import sys
 import types
 from unittest.mock import MagicMock
+
 import pytest
 
-# If homeassistant is not installed in the local Python environment,
+# If homeassistant or voluptuous are not installed in the local Python environment,
 # provide a dynamic import hook so unit tests can run locally without full HA core.
+if "voluptuous" not in sys.modules:
+    try:
+        import voluptuous  # noqa: F401
+    except ImportError:
+
+        class VoluptuousMockModule(types.ModuleType):
+            def __init__(self, name: str) -> None:
+                super().__init__(name)
+                self.Schema = lambda s, *a, **kw: s
+                self.Required = lambda k, *a, **kw: k
+                self.Optional = lambda k, *a, **kw: k
+                self.In = lambda items, *a, **kw: items
+                self.Coerce = lambda t, *a, **kw: t
+                self.Range = lambda *a, **kw: lambda x: x
+                self.All = lambda *a, **kw: lambda x: x
+                self.Length = lambda *a, **kw: lambda x: x
+                self.ExactSequence = lambda *a, **kw: lambda x: x
+                self.MultipleInvalid = Exception
+                self.Invalid = Exception
+
+            def __getattr__(self, name: str):
+                m = MagicMock()
+                setattr(self, name, m)
+                return m
+
+        sys.modules["voluptuous"] = VoluptuousMockModule("voluptuous")
+
 if "homeassistant" not in sys.modules:
     try:
         import homeassistant  # noqa: F401
     except ImportError:
+
         class DynamicMockModule(types.ModuleType):
             def __init__(self, name: str) -> None:
                 super().__init__(name)
@@ -28,6 +57,7 @@ if "homeassistant" not in sys.modules:
             def find_spec(self, fullname, path, target=None):
                 if fullname == "homeassistant" or fullname.startswith("homeassistant."):
                     from importlib.machinery import ModuleSpec
+
                     return ModuleSpec(fullname, self)
                 return None
 
@@ -98,15 +128,19 @@ if "homeassistant" not in sys.modules:
                 super().__init__(kwargs)
 
         import homeassistant.core
+
         homeassistant.core.State = MockState
 
         import homeassistant.helpers.update_coordinator
+
         homeassistant.helpers.update_coordinator.CoordinatorEntity = MockCoordinatorEntity
 
         import homeassistant.components.sensor
+
         homeassistant.components.sensor.SensorEntity = MockSensorEntity
 
         import homeassistant.components.weather
+
         homeassistant.components.weather.WeatherEntity = MockWeatherEntity
         homeassistant.components.weather.Forecast = MockForecast
 

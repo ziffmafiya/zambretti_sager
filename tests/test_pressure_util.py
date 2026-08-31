@@ -32,20 +32,32 @@ def test_calculate_sea_level_pressure():
 def test_parse_pressure_hpa_from_history():
     """Test parsing and unit conversion from historical state dicts."""
     # hPa / mbar
-    assert parse_pressure_hpa_from_history({"state": "1013.25", "attributes": {"unit_of_measurement": "hPa"}}) == pytest.approx(1013.25)
-    assert parse_pressure_hpa_from_history({"state": "1013.25", "attributes": {"unit_of_measurement": "mbar"}}) == pytest.approx(1013.25)
+    assert parse_pressure_hpa_from_history(
+        {"state": "1013.25", "attributes": {"unit_of_measurement": "hPa"}}
+    ) == pytest.approx(1013.25)
+    assert parse_pressure_hpa_from_history(
+        {"state": "1013.25", "attributes": {"unit_of_measurement": "mbar"}}
+    ) == pytest.approx(1013.25)
 
     # Pa (Pascals) -> hPa
-    assert parse_pressure_hpa_from_history({"state": "101325", "attributes": {"unit_of_measurement": "Pa"}}) == pytest.approx(1013.25)
+    assert parse_pressure_hpa_from_history(
+        {"state": "101325", "attributes": {"unit_of_measurement": "Pa"}}
+    ) == pytest.approx(1013.25)
 
     # inHg -> hPa (29.92 inHg ~ 1013.2 hPa)
-    assert parse_pressure_hpa_from_history({"state": "29.92", "attributes": {"unit_of_measurement": "inHg"}}) == pytest.approx(1013.2, abs=0.2)
+    assert parse_pressure_hpa_from_history(
+        {"state": "29.92", "attributes": {"unit_of_measurement": "inHg"}}
+    ) == pytest.approx(1013.2, abs=0.2)
 
     # mmHg -> hPa (760 mmHg ~ 1013.25 hPa)
-    assert parse_pressure_hpa_from_history({"state": "760", "attributes": {"unit_of_measurement": "mmHg"}}) == pytest.approx(1013.25, abs=0.2)
+    assert parse_pressure_hpa_from_history(
+        {"state": "760", "attributes": {"unit_of_measurement": "mmHg"}}
+    ) == pytest.approx(1013.25, abs=0.2)
 
     # bar -> hPa (1.01325 bar -> 1013.25 hPa)
-    assert parse_pressure_hpa_from_history({"state": "1.01325", "attributes": {"unit_of_measurement": "bar"}}) == pytest.approx(1013.25)
+    assert parse_pressure_hpa_from_history(
+        {"state": "1.01325", "attributes": {"unit_of_measurement": "bar"}}
+    ) == pytest.approx(1013.25)
 
     # Invalid / unavailable values raise ValueError
     with pytest.raises(ValueError):

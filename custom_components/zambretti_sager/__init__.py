@@ -1,18 +1,17 @@
 """Zambretti & Sager Weather Forecaster integration for Home Assistant."""
+
 from __future__ import annotations
 
 import logging
-
-import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.start import async_at_start
+import voluptuous as vol
 
-from .const import DOMAIN, VERSION
+from .const import DOMAIN, URL_BASE, VERSION
 from .coordinator import ZambrettiConfigEntry, async_create_coordinator
 from .frontend import JSModuleRegistration
 
@@ -24,6 +23,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 # ── WebSocket: version endpoint ───────────────────────────────────────────
+
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/version"})
 @websocket_api.async_response
@@ -37,6 +37,7 @@ async def _ws_get_version(
 
 
 # ── async_setup ───────────────────────────────────────────────────────────
+
 
 async def _async_setup_frontend(hass: HomeAssistant) -> None:
     """Register the custom Lovelace card resource and static path."""
@@ -66,6 +67,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 # ── async_setup_entry ─────────────────────────────────────────────────────
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ZambrettiConfigEntry) -> bool:
     """Set up Zambretti & Sager from a config entry (via UI)."""
     _LOGGER.info("Initializing Zambretti & Sager for: %s", entry.title)
@@ -90,4 +92,3 @@ async def _update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
 async def async_unload_entry(hass: HomeAssistant, entry: ZambrettiConfigEntry) -> bool:
     """Unload a config entry (called when entry is removed)."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-

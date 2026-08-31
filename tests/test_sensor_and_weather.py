@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 from unittest.mock import MagicMock
+
 import pytest
 
 from custom_components.zambretti_sager.coordinator import ForecastData
@@ -41,7 +42,7 @@ def mock_coordinator():
         altitude=120.0,
         temperature=21.5,
         is_night=False,
-        last_updated=datetime.datetime(2026, 8, 22, 16, 0, tzinfo=datetime.timezone.utc),
+        last_updated=datetime.datetime(2026, 8, 22, 16, 0, tzinfo=datetime.UTC),
         delta_3h=2.2,
         trend_label="↑ Rising",
         zambretti_state="settled_fine",
@@ -111,7 +112,7 @@ def test_last_update_sensor(mock_coordinator):
     sensor = LastUpdateSensor(mock_coordinator)
     assert sensor.translation_key == "last_update"
     assert sensor.available is True
-    assert sensor.native_value == datetime.datetime(2026, 8, 22, 16, 0, tzinfo=datetime.timezone.utc)
+    assert sensor.native_value == datetime.datetime(2026, 8, 22, 16, 0, tzinfo=datetime.UTC)
     assert sensor.force_update is True
 
 

@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, VERSION, ZAMBRETTI_MAPPING
+from .const import DOMAIN, VERSION
 from .coordinator import ZambrettiConfigEntry, ZambrettiSagerCoordinator
 
 ZAMBRETTI_TO_CONDITION: dict[str, str] = {
@@ -68,8 +68,7 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
     _attr_native_pressure_unit = UnitOfPressure.HPA
     _attr_native_wind_speed_unit = UnitOfSpeed.METERS_PER_SECOND
     _attr_supported_features = (
-        WeatherEntityFeature.FORECAST_HOURLY
-        | WeatherEntityFeature.FORECAST_DAILY
+        WeatherEntityFeature.FORECAST_HOURLY | WeatherEntityFeature.FORECAST_DAILY
     )
     _attr_has_entity_name = True
 
@@ -150,13 +149,15 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
             cond = ZAMBRETTI_TO_CONDITION.get(state) if state else None
             forecast_time = (now + timedelta(hours=hours)).isoformat()
 
-            items.append(Forecast(
-                datetime=forecast_time,
-                condition=cond,
-                native_temperature=d.temperature,
-                native_temperature_unit=self._attr_native_temperature_unit,
-                native_pressure=p_pred,
-                native_pressure_unit=self._attr_native_pressure_unit,
-            ))
+            items.append(
+                Forecast(
+                    datetime=forecast_time,
+                    condition=cond,
+                    native_temperature=d.temperature,
+                    native_temperature_unit=self._attr_native_temperature_unit,
+                    native_pressure=p_pred,
+                    native_pressure_unit=self._attr_native_pressure_unit,
+                )
+            )
 
         return items

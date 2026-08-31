@@ -23,15 +23,17 @@ async def async_setup_entry(
     """Set up the Zambretti & Sager sensors."""
     coordinator = entry.runtime_data
 
-    async_add_entities([
-        ZambrettiSensor(coordinator),
-        SagerSensor(coordinator),
-        ZambrettiForecast6h(coordinator),
-        ZambrettiForecast12h(coordinator),
-        ZambrettiForecast24h(coordinator),
-        PrecipitationProbability(coordinator),
-        LastUpdateSensor(coordinator),
-    ])
+    async_add_entities(
+        [
+            ZambrettiSensor(coordinator),
+            SagerSensor(coordinator),
+            ZambrettiForecast6h(coordinator),
+            ZambrettiForecast12h(coordinator),
+            ZambrettiForecast24h(coordinator),
+            PrecipitationProbability(coordinator),
+            LastUpdateSensor(coordinator),
+        ]
+    )
 
 
 class WeatherSensorBase(CoordinatorEntity[ZambrettiSagerCoordinator], SensorEntity):

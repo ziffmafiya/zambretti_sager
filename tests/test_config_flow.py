@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from custom_components.zambretti_sager.config_flow import (
     _apply_location,
     _normalize_optional_entities,

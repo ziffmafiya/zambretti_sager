@@ -13,13 +13,15 @@ _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATES = frozenset({"unknown", "unavailable", "none", ""})
 
-_HPA_UNITS = frozenset({
-    UnitOfPressure.HPA,
-    UnitOfPressure.MBAR,
-    "hPa",
-    "mbar",
-    "mb",
-})
+_HPA_UNITS = frozenset(
+    {
+        UnitOfPressure.HPA,
+        UnitOfPressure.MBAR,
+        "hPa",
+        "mbar",
+        "mb",
+    }
+)
 
 
 _ELEVATION_CACHE: dict[tuple[float, float], float] = {}
@@ -105,7 +107,7 @@ def calculate_sea_level_pressure(pressure, temperature, altitude):
         # Fallback: approximate 1 hPa per 8.3 m
         return pressure + (altitude / 8.3)
 
-    return pressure / (factor ** 5.257)
+    return pressure / (factor**5.257)
 
 
 def _normalize_pressure_value(value: float, unit: str | None, entity_id: str) -> float:

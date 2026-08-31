@@ -3,24 +3,24 @@
 from __future__ import annotations
 
 import asyncio
+from collections import deque
+from dataclasses import dataclass
 import datetime
 import logging
-from collections import deque
-from dataclasses import dataclass, field
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.recorder import get_instance, history
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_HUMIDITY_SENSOR,
     CONF_LATITUDE,
     CONF_LONGITUDE,
     CONF_PRESSURE_SENSOR,
     CONF_TEMPERATURE_SENSOR,
-    CONF_HUMIDITY_SENSOR,
     CONF_USE_SEA_LEVEL,
     CONF_WIND_SENSOR,
     CONF_WIND_SPEED_SENSOR,
@@ -53,31 +53,31 @@ class ForecastData:
     """Snapshot of data needed to calculate forecasts."""
 
     available: bool
-    p_now: float | None = None          # Current sea-level pressure (hPa)
-    p_3h: float | None = None           # Pressure 3 hours ago
-    p_6h: float | None = None           # Pressure 6 hours ago
-    p_12h: float | None = None          # Pressure 12 hours ago
-    wind_degrees: float | None = None   # Wind direction in degrees
-    wind_direction: str | None = None   # Wind compass (e.g. "NW")
-    wind_speed: float | None = None     # Wind speed
-    humidity: float | None = None       # Relative humidity (%)
-    altitude: float | None = None       # Station altitude (meters)
-    temperature: float = 15.0           # Current temperature (°C)
-    is_night: bool = False              # True if sun is below horizon
+    p_now: float | None = None  # Current sea-level pressure (hPa)
+    p_3h: float | None = None  # Pressure 3 hours ago
+    p_6h: float | None = None  # Pressure 6 hours ago
+    p_12h: float | None = None  # Pressure 12 hours ago
+    wind_degrees: float | None = None  # Wind direction in degrees
+    wind_direction: str | None = None  # Wind compass (e.g. "NW")
+    wind_speed: float | None = None  # Wind speed
+    humidity: float | None = None  # Relative humidity (%)
+    altitude: float | None = None  # Station altitude (meters)
+    temperature: float = 15.0  # Current temperature (°C)
+    is_night: bool = False  # True if sun is below horizon
     last_updated: datetime.datetime | None = None  # UTC timestamp of this snapshot
 
     # Pre-calculated forecast fields
-    delta_3h: float | None = None       # Pressure delta over 3h
-    trend_label: str = "→ Steady"       # Trend string for attributes
+    delta_3h: float | None = None  # Pressure delta over 3h
+    trend_label: str = "→ Steady"  # Trend string for attributes
     zambretti_state: str | None = None  # Current Zambretti forecast translation key
-    sager_state: str | None = None      # Current Sager forecast translation key
-    zambretti_6h: str | None = None     # 6h Zambretti forecast translation key
-    predicted_p_6h: float | None = None # Predicted pressure in 6h
-    zambretti_12h: str | None = None    # 12h Zambretti forecast translation key
-    predicted_p_12h: float | None = None# Predicted pressure in 12h
-    zambretti_24h: str | None = None    # 24h Zambretti forecast translation key
-    predicted_p_24h: float | None = None# Predicted pressure in 24h
-    precip_probability: int | None = None # Precipitation probability 0-100%
+    sager_state: str | None = None  # Current Sager forecast translation key
+    zambretti_6h: str | None = None  # 6h Zambretti forecast translation key
+    predicted_p_6h: float | None = None  # Predicted pressure in 6h
+    zambretti_12h: str | None = None  # 12h Zambretti forecast translation key
+    predicted_p_12h: float | None = None  # Predicted pressure in 12h
+    zambretti_24h: str | None = None  # 24h Zambretti forecast translation key
+    predicted_p_24h: float | None = None  # Predicted pressure in 24h
+    precip_probability: int | None = None  # Precipitation probability 0-100%
 
 
 class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
@@ -102,13 +102,18 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
 
         # Load sensor entity IDs from config entry
         self.pressure_id = (
-            entry.options.get(CONF_PRESSURE_SENSOR)
-            or entry.data[CONF_PRESSURE_SENSOR]
+            entry.options.get(CONF_PRESSURE_SENSOR) or entry.data[CONF_PRESSURE_SENSOR]
         )
         self.wind_id = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
-        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(CONF_WIND_SPEED_SENSOR)
-        self.temp_id = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(CONF_TEMPERATURE_SENSOR)
-        self.humidity_id = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(CONF_HUMIDITY_SENSOR)
+        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(
+            CONF_WIND_SPEED_SENSOR
+        )
+        self.temp_id = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(
+            CONF_TEMPERATURE_SENSOR
+        )
+        self.humidity_id = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(
+            CONF_HUMIDITY_SENSOR
+        )
         self.use_sea_level = (
             entry.options.get(CONF_USE_SEA_LEVEL)
             if CONF_USE_SEA_LEVEL in entry.options
@@ -124,8 +129,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         """Update sensor entity IDs from config entry on reload."""
         entry = self.entry
         new_pressure_id = (
-            entry.options.get(CONF_PRESSURE_SENSOR)
-            or entry.data[CONF_PRESSURE_SENSOR]
+            entry.options.get(CONF_PRESSURE_SENSOR) or entry.data[CONF_PRESSURE_SENSOR]
         )
         if new_pressure_id != self._last_pressure_id:
             self._sea_level_warning_logged = False
@@ -135,9 +139,15 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
 
         self.pressure_id = new_pressure_id
         self.wind_id = entry.options.get(CONF_WIND_SENSOR) or entry.data.get(CONF_WIND_SENSOR)
-        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(CONF_WIND_SPEED_SENSOR)
-        self.temp_id = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(CONF_TEMPERATURE_SENSOR)
-        self.humidity_id = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(CONF_HUMIDITY_SENSOR)
+        self.wind_speed_id = entry.options.get(CONF_WIND_SPEED_SENSOR) or entry.data.get(
+            CONF_WIND_SPEED_SENSOR
+        )
+        self.temp_id = entry.options.get(CONF_TEMPERATURE_SENSOR) or entry.data.get(
+            CONF_TEMPERATURE_SENSOR
+        )
+        self.humidity_id = entry.options.get(CONF_HUMIDITY_SENSOR) or entry.data.get(
+            CONF_HUMIDITY_SENSOR
+        )
         self.use_sea_level = (
             entry.options.get(CONF_USE_SEA_LEVEL)
             if CONF_USE_SEA_LEVEL in entry.options
@@ -173,9 +183,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
     def _is_nighttime(self) -> bool:
         """Determine if it's currently night (using sun.sun elevation)."""
         sun_state = self.hass.states.get("sun.sun")
-        if sun_state and sun_state.attributes.get("elevation", 90) < 0:
-            return True
-        return False
+        return bool(sun_state and sun_state.attributes.get("elevation", 90) < 0)
 
     async def _async_update_data(self) -> ForecastData:
         """Fetch current pressure, history, and wind data."""
@@ -228,31 +236,41 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         # Pre-calculated forecasts
         delta_3h = round(p_now - p_3h, 2)
         trend_label = get_trend_label(delta_3h)
-        zambretti_state = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(p_now, delta_3h), "stable")
+        zambretti_state = ZAMBRETTI_MAPPING.get(
+            calculate_zambretti_index(p_now, delta_3h), "stable"
+        )
         sager_state = calculate_sager_forecast(p_now, delta_3h, wind)
 
         # 6h extrapolation
         delta_6h = (p_now - p_3h) * 2
         predicted_p_6h = round(p_now + delta_6h, 1)
-        zambretti_6h = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(predicted_p_6h, delta_6h), "stable")
+        zambretti_6h = ZAMBRETTI_MAPPING.get(
+            calculate_zambretti_index(predicted_p_6h, delta_6h), "stable"
+        )
 
         # 12h extrapolation
         p_ref_12 = p_6h if history_raw.get(6) is not None else p_3h
         h_12 = 6 if history_raw.get(6) is not None else 3
         delta_12h = (p_now - p_ref_12) / h_12 * 12
         predicted_p_12h = round(p_now + delta_12h, 1)
-        zambretti_12h = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(predicted_p_12h, delta_12h), "stable")
+        zambretti_12h = ZAMBRETTI_MAPPING.get(
+            calculate_zambretti_index(predicted_p_12h, delta_12h), "stable"
+        )
 
         # 24h extrapolation
-        p_ref_24 = p_12h if history_raw.get(12) is not None else (
-            p_6h if history_raw.get(6) is not None else p_3h
+        p_ref_24 = (
+            p_12h
+            if history_raw.get(12) is not None
+            else (p_6h if history_raw.get(6) is not None else p_3h)
         )
-        h_24 = 12 if history_raw.get(12) is not None else (
-            6 if history_raw.get(6) is not None else 3
+        h_24 = (
+            12 if history_raw.get(12) is not None else (6 if history_raw.get(6) is not None else 3)
         )
         delta_24h = (p_now - p_ref_24) / h_24 * 24
         predicted_p_24h = round(p_now + delta_24h, 1)
-        zambretti_24h = ZAMBRETTI_MAPPING.get(calculate_zambretti_index(predicted_p_24h, delta_24h), "stable")
+        zambretti_24h = ZAMBRETTI_MAPPING.get(
+            calculate_zambretti_index(predicted_p_24h, delta_24h), "stable"
+        )
 
         # Precipitation probability
         precip_prob = calculate_precipitation_probability(p_now, delta_3h, humidity)
@@ -353,9 +371,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
                 )
                 self._sea_level_warning_logged = True
             return raw_pressure
-        return calculate_sea_level_pressure(
-            raw_pressure, self._get_temperature(), self.altitude
-        )
+        return calculate_sea_level_pressure(raw_pressure, self._get_temperature(), self.altitude)
 
     def _correct_history_pressure(self, raw_pressure: float | None, fallback: float) -> float:
         """Correct historical pressure reading, or return fallback if unavailable."""
@@ -388,10 +404,22 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
 
         # Try converting compass string state (e.g. "N", "NE", "SW", etc.)
         compass_map = {
-            "N": 0.0, "NNE": 22.5, "NE": 45.0, "ENE": 67.5,
-            "E": 90.0, "ESE": 112.5, "SE": 135.0, "SSE": 157.5,
-            "S": 180.0, "SSW": 202.5, "SW": 225.0, "WSW": 247.5,
-            "W": 270.0, "WNW": 292.5, "NW": 315.0, "NNW": 337.5,
+            "N": 0.0,
+            "NNE": 22.5,
+            "NE": 45.0,
+            "ENE": 67.5,
+            "E": 90.0,
+            "ESE": 112.5,
+            "SE": 135.0,
+            "SSE": 157.5,
+            "S": 180.0,
+            "SSW": 202.5,
+            "SW": 225.0,
+            "WSW": 247.5,
+            "W": 270.0,
+            "WNW": 292.5,
+            "NW": 315.0,
+            "NNW": 337.5,
         }
         state_str = str(state.state).upper().strip()
         return compass_map.get(state_str)
@@ -505,7 +533,9 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
 
         return best_p
 
-    async def _fetch_history_pressures(self, now: datetime.datetime | None = None) -> dict[int, float | None]:
+    async def _fetch_history_pressures(
+        self, now: datetime.datetime | None = None
+    ) -> dict[int, float | None]:
         """Fetch pressure at 3, 6, and 12 hours ago (memory buffer first, fallback to recorder)."""
         if now is None:
             now = dt_util.utcnow()
@@ -575,9 +605,7 @@ async def async_create_coordinator(
         _LOGGER.info("Using Home Assistant configured elevation: %.1f m", altitude)
 
     if altitude is None:
-        _LOGGER.warning(
-            "Could not determine altitude, sea level correction will use raw pressure"
-        )
+        _LOGGER.warning("Could not determine altitude, sea level correction will use raw pressure")
 
     coordinator = ZambrettiSagerCoordinator(hass, entry, altitude)
     try:
