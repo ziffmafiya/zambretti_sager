@@ -37,3 +37,8 @@ home-assistant_v2.db
 .DS_Store
 Thumbs.db
 optimize_icon.py
+
+# Tests & Coverage
+.coverage
+.pytest_cache/
+

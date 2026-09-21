@@ -1,0 +1,10 @@
+{
+  "name": "zambretti-sager-card",
+  "version": "1.9.89",
+  "description": "Zambretti & Sager Lovelace Card for Home Assistant",
+  "scripts": {
+    "build": "npx esbuild custom_components/zambretti_sager/frontend/zambretti-weather-card.src.js --minify --format=esm --outfile=custom_components/zambretti_sager/frontend/zambretti-weather-card.js && npx esbuild custom_components/zambretti_sager/frontend/zambretti-weather-card-editor.src.js --minify --format=esm --outfile=custom_components/zambretti_sager/frontend/zambretti-weather-card-editor.js",
+    "build:card": "npx esbuild custom_components/zambretti_sager/frontend/zambretti-weather-card.src.js --minify --format=esm --outfile=custom_components/zambretti_sager/frontend/zambretti-weather-card.js",
+    "build:editor": "npx esbuild custom_components/zambretti_sager/frontend/zambretti-weather-card-editor.src.js --minify --format=esm --outfile=custom_components/zambretti_sager/frontend/zambretti-weather-card-editor.js"
+  }
+}

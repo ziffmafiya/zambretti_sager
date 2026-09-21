@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.9.89] — 2026-09-21
+
+### Added
+- **Modular Architecture (SOLID Principles)**:
+  - Extracted core mathematical models and forecasting algorithms into `algorithms.py`.
+  - Extracted forecast calculation and extrapolation pipelines into `forecast_engine.py` (`ForecastEngine`).
+  - Extracted historical pressure buffer management and binary search lookup into `history.py` (`HistoryBuffer`).
+  - Extracted elevation API retrieval service with graceful multi-provider failover into `elevation.py` (`ElevationService`).
+  - Extracted pressure unit detection and barometric hypsometric reduction into `pressure_util.py`.
+- **Comprehensive Unit Test Suite**:
+  - Added dedicated test suites for `algorithms.py`, `elevation.py`, `forecast_engine.py`, and `history.py` (47 unit tests total).
+- **Frontend Accessibility (A11y)**:
+  - Added explicit `role="img"` and localized descriptive `aria-label` attributes to dynamic weather icons, circular precipitation gauges, and SVG history charts.
+  - Full native localization of card editor labels and helper text for Czech (CS), Swedish (SV), Danish (DA), Norwegian (NB), Hungarian (HU), and Turkish (TR).
+
+### Optimized
+- **Recorder Database Query Batching (Performance)**:
+  - Replaced N+1 individual SQL queries during history buffer warming with a single batch `history.get_significant_states` call.
+- **Sub-Millisecond History Lookups**:
+  - Replaced linear $O(N)$ scanning with `bisect_right` binary search $O(\log N)$ on sorted history buffer timestamps.
+- **Frontend Asset Loading & Code Splitting**:
+  - Separated the visual card editor into `zambretti-weather-card-editor.js`, loaded asynchronously on demand only when editing the dashboard.
+  - Configured `esbuild` minification reducing total JavaScript bundle size by over 40%.
+- **Memory & Resource Cleanup**:
+  - Removed orphaned `_historyTimer` intervals in frontend card lifecycle.
+
+### Security
+- **Local-First Privacy Hardening**:
+  - Prioritized local station elevation from `hass.config.elevation`, completely avoiding external geolocation queries and protecting user GPS coordinates.
+  - Modernized `aiohttp.ClientTimeout` configurations with strict connect/sock_read timeouts.
+
+---
+
 ## [1.9.88] — 2026-08-30
 
 ### Fixed

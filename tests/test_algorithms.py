@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from custom_components.zambretti_sager.const import (
     ZAMBRETTI_MAPPING,
+    calculate_extrapolations,
     calculate_precipitation_probability,
     calculate_sager_forecast,
     calculate_zambretti_index,
@@ -113,3 +114,24 @@ def test_calculate_sager_forecast():
     res_no_wind = calculate_sager_forecast(1013.0, 0.0, None)
     assert res_no_wind is not None
     assert res_no_wind.startswith("sager_")
+
+
+def test_calculate_extrapolations():
+    """Test 6h, 12h, and 24h pressure and forecast extrapolations."""
+    # Pressure rising from 1010 to 1012 in 3 hours
+    res = calculate_extrapolations(p_now=1012.0, p_3h=1010.0, p_6h=1008.0, p_12h=1004.0)
+
+    assert 6 in res
+    assert 12 in res
+    assert 24 in res
+
+    # 6h: delta = (1012 - 1010) * 2 = +4.0 -> predicted = 1016.0
+    assert res[6].predicted_pressure == 1016.0
+    assert res[6].forecast_state in ZAMBRETTI_MAPPING.values()
+
+    # 12h: delta = (1012 - 1008) / 6 * 12 = +8.0 -> predicted = 1020.0
+    assert res[12].predicted_pressure == 1020.0
+
+    # 24h: delta = (1012 - 1004) / 12 * 24 = +16.0 -> predicted = 1028.0
+    assert res[24].predicted_pressure == 1028.0
+
