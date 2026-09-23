@@ -182,7 +182,9 @@ def test_coordinator_wind_direction():
     assert coord._get_wind_direction() == 90.0
 
     # Unknown state returns None
-    mock_hass.states.get.return_value = MagicMock(state="unknown", attributes={"wind_bearing": 90.0})
+    mock_hass.states.get.return_value = MagicMock(
+        state="unknown", attributes={"wind_bearing": 90.0}
+    )
     assert coord._get_wind_direction() is None
 
     # Missing sensor
@@ -325,6 +327,3 @@ async def test_coordinator_fetch_history_pressures_batch_fallback():
     call_args = mock_batch.call_args[0]
     assert call_args[2] == [3, 6, 12]
     assert coord._history_warmed is True
-
-
-

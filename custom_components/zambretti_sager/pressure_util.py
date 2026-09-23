@@ -33,8 +33,6 @@ _HPA_UNITS = frozenset(
 )
 
 
-
-
 def calculate_sea_level_pressure(pressure, temperature, altitude):
     """Calculate sea-level pressure from absolute pressure using the barometric formula.
 

@@ -139,7 +139,9 @@ async def test_async_get_history_pressures_batch_from_recorder_success():
     )
 
     buffer = PressureHistoryBuffer()
-    with patch("custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder):
+    with patch(
+        "custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder
+    ):
         results = await async_get_history_pressures_batch_from_recorder(
             mock_hass,
             "sensor.pressure",
@@ -177,7 +179,9 @@ async def test_async_get_history_pressures_batch_empty_and_error():
     mock_recorder.async_add_executor_job = AsyncMock(side_effect=RuntimeError("DB dead"))
 
     now = datetime.datetime.now(datetime.UTC)
-    with patch("custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder):
+    with patch(
+        "custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder
+    ):
         res_err = await async_get_history_pressures_batch_from_recorder(
             mock_hass, "sensor.pressure", [3, 6], now
         )
@@ -196,14 +200,12 @@ async def test_async_get_history_pressure_from_recorder_wrapper():
     t_3h = now - datetime.timedelta(hours=3)
     s_3h = MagicMock(state="1018.5", last_changed=t_3h, attributes={"unit_of_measurement": "hPa"})
 
-    mock_recorder.async_add_executor_job = AsyncMock(
-        return_value={"sensor.pressure": [s_3h]}
-    )
+    mock_recorder.async_add_executor_job = AsyncMock(return_value={"sensor.pressure": [s_3h]})
 
-    with patch("custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder):
-        val = await async_get_history_pressure_from_recorder(
-            mock_hass, "sensor.pressure", 3, now
-        )
+    with patch(
+        "custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder
+    ):
+        val = await async_get_history_pressure_from_recorder(mock_hass, "sensor.pressure", 3, now)
     assert val == 1018.5
 
 
@@ -219,15 +221,13 @@ async def test_async_warm_history_buffer():
     t_1h = now - datetime.timedelta(hours=1)
     s_1h = MagicMock(state="1013.0", last_changed=t_1h, attributes={"unit_of_measurement": "hPa"})
 
-    mock_recorder.async_add_executor_job = AsyncMock(
-        return_value={"sensor.pressure": [s_1h]}
-    )
+    mock_recorder.async_add_executor_job = AsyncMock(return_value={"sensor.pressure": [s_1h]})
 
     buffer = PressureHistoryBuffer()
-    with patch("custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder):
-        loaded = await async_warm_history_buffer(
-            mock_hass, "sensor.pressure", buffer, hours=2
-        )
+    with patch(
+        "custom_components.zambretti_sager.history.get_instance", return_value=mock_recorder
+    ):
+        loaded = await async_warm_history_buffer(mock_hass, "sensor.pressure", buffer, hours=2)
     assert loaded == 1
     assert len(buffer) == 1
     assert buffer.get_pressure_at(t_1h) == 1013.0

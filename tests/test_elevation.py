@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -66,3 +66,100 @@ async def test_resolve_elevation_no_coords_no_config():
 
     res = await async_resolve_elevation(mock_hass, latitude=None, longitude=None)
     assert res is None
+
+
+class MockAsyncContextManager:
+    """Helper to mock aiohttp session.get() async context manager."""
+
+    def __init__(self, response):
+        self.response = response
+
+    async def __aenter__(self):
+        return self.response
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return None
+
+
+@pytest.mark.asyncio
+async def test_get_elevation_from_api_open_elevation_success():
+    """Test get_elevation_from_api returns elevation from Open-Elevation."""
+    from custom_components.zambretti_sager.elevation import (
+        _ELEVATION_CACHE,
+        get_elevation_from_api,
+    )
+
+    _ELEVATION_CACHE.clear()
+    mock_hass = AsyncMock()
+    mock_resp = AsyncMock()
+    mock_resp.status = 200
+    mock_resp.json = AsyncMock(return_value={"results": [{"elevation": 142.5}]})
+
+    mock_session = MagicMock()
+    mock_session.get.return_value = MockAsyncContextManager(mock_resp)
+
+    with patch(
+        "custom_components.zambretti_sager.elevation.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        val = await get_elevation_from_api(mock_hass, 50.1234, 14.5678)
+        assert val == 142.5
+
+        # Check cache
+        val_cached = await get_elevation_from_api(mock_hass, 50.1234, 14.5678)
+        assert val_cached == 142.5
+        # Only 1 HTTP call made due to cache
+        assert mock_session.get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_get_elevation_from_api_fallback_to_open_meteo():
+    """Test fallback to Open-Meteo when Open-Elevation returns non-200 or fails."""
+    from custom_components.zambretti_sager.elevation import (
+        _ELEVATION_CACHE,
+        get_elevation_from_api,
+    )
+
+    _ELEVATION_CACHE.clear()
+    mock_hass = AsyncMock()
+
+    mock_resp_oe = AsyncMock()
+    mock_resp_oe.status = 500
+
+    mock_resp_om = AsyncMock()
+    mock_resp_om.status = 200
+    mock_resp_om.json = AsyncMock(return_value={"elevation": [178.0]})
+
+    mock_session = MagicMock()
+    mock_session.get.side_effect = [
+        MockAsyncContextManager(mock_resp_oe),
+        MockAsyncContextManager(mock_resp_om),
+    ]
+
+    with patch(
+        "custom_components.zambretti_sager.elevation.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        val = await get_elevation_from_api(mock_hass, 52.0, 13.0)
+        assert val == 178.0
+
+
+@pytest.mark.asyncio
+async def test_get_elevation_from_api_all_fail():
+    """Test returns None when both elevation APIs fail or raise exceptions."""
+    from custom_components.zambretti_sager.elevation import (
+        _ELEVATION_CACHE,
+        get_elevation_from_api,
+    )
+
+    _ELEVATION_CACHE.clear()
+    mock_hass = AsyncMock()
+    mock_session = MagicMock()
+    mock_session.get.side_effect = Exception("Connection error")
+
+    with patch(
+        "custom_components.zambretti_sager.elevation.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        val = await get_elevation_from_api(mock_hass, 52.0, 13.0)
+        assert val is None

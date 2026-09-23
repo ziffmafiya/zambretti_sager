@@ -134,4 +134,3 @@ def test_calculate_extrapolations():
 
     # 24h: delta = (1012 - 1004) / 12 * 24 = +16.0 -> predicted = 1028.0
     assert res[24].predicted_pressure == 1028.0
-

@@ -37,6 +37,36 @@ if "voluptuous" not in sys.modules:
 
         sys.modules["voluptuous"] = VoluptuousMockModule("voluptuous")
 
+if "aiohttp" not in sys.modules:
+    try:
+        import aiohttp  # noqa: F401
+    except ImportError:
+
+        class MockClientTimeout:
+            def __init__(
+                self,
+                total: float | None = None,
+                connect: float | None = None,
+                sock_read: float | None = None,
+                sock_connect: float | None = None,
+            ) -> None:
+                self.total = total
+                self.connect = connect
+                self.sock_read = sock_read
+                self.sock_connect = sock_connect
+
+        class AiohttpMockModule(types.ModuleType):
+            ClientTimeout = MockClientTimeout
+            ClientSession = MagicMock
+            ClientError = Exception
+
+            def __getattr__(self, name: str):
+                m = MagicMock()
+                setattr(self, name, m)
+                return m
+
+        sys.modules["aiohttp"] = AiohttpMockModule("aiohttp")
+
 if "homeassistant" not in sys.modules:
     try:
         import homeassistant  # noqa: F401

@@ -234,9 +234,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         unit = state.attributes.get("unit_of_measurement")
         if unit and isinstance(unit, str):
             try:
-                return float(
-                    TemperatureConverter.convert(raw_val, unit, UnitOfTemperature.CELSIUS)
-                )
+                return float(TemperatureConverter.convert(raw_val, unit, UnitOfTemperature.CELSIUS))
             except Exception:
                 unit_clean = unit.upper().replace("°", "").strip()
                 if unit_clean == "F":

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import logging
 
-import aiohttp
+try:
+    import aiohttp
+except ImportError:  # pragma: no cover
+    aiohttp = None  # type: ignore[assignment]
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -25,7 +29,7 @@ async def get_elevation_from_api(
         return _ELEVATION_CACHE[cache_key]
 
     session = async_get_clientsession(hass)
-    timeout = aiohttp.ClientTimeout(total=10.0, connect=5.0)
+    timeout = aiohttp.ClientTimeout(total=10.0, connect=5.0) if aiohttp is not None else 10.0
 
     # 1. Try Open-Elevation API
     url_open_elevation = (
